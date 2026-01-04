@@ -36,7 +36,6 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser",
       [
         "@sentry/react-native/expo",
         {
@@ -45,7 +44,8 @@
           "organization": "hcmut-nu"
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-web-browser"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
