@@ -21,6 +21,13 @@ Sentry.init({
   // spotlight: __DEV__,
 });
 
+import NotificationToast from './src/components/NotificationToast';
+
 export default Sentry.wrap(function App() {
-  return <RootNavigator />;
+  return (
+    <>
+      <RootNavigator />
+      <NotificationToast />
+    </>
+  );
 });

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import LogoDark from "../../assets/logos/logo_dark.svg";
+import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -138,6 +139,14 @@ export default function HomeScreen() {
 
   // Use state data (could be filtered later)
   const [courtsData, setCourtsData] = useState(INITIAL_COURTS);
+
+  // Filter States
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   // Pagination Logic
   const totalPages = Math.ceil(courtsData.length / ITEMS_PER_PAGE);
@@ -271,6 +280,39 @@ export default function HomeScreen() {
     );
   };
 
+  const renderLocationPicker = (
+    visible: boolean,
+    title: string,
+    data: string[],
+    onSelect: (item: string) => void,
+    onClose: () => void
+  ) => (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderColor: '#eee' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={{ padding: 16, borderBottomWidth: 1, borderColor: '#f0f0f0' }}
+                onPress={() => { onSelect(item); onClose(); }}
+              >
+                <Text style={{ fontSize: 16 }}>{item}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderFilterModal = () => (
     <Modal
       animationType="slide"
@@ -282,73 +324,122 @@ export default function HomeScreen() {
         {/* Header Modal */}
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={() => setFilterVisible(false)} style={styles.modalBackBtn}>
-            <Ionicons name="arrow-back" size={24} color="#3B9AFF" />
+            <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Tìm kiếm</Text>
-          <TouchableOpacity onPress={() => { /* reset */ }}>
-            <Ionicons name="refresh" size={24} color="#3B9AFF" />
+          <Text style={styles.modalTitle}>Bộ lọc tìm kiếm</Text>
+          <TouchableOpacity onPress={() => {
+            setSelectedCity('');
+            setSelectedDistrict('');
+            setMinPrice('');
+            setMaxPrice('');
+          }}>
+            <Text style={{ color: '#3B9AFF', fontWeight: 'bold' }}>Đặt lại</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.modalContent}>
           {/* Area Section */}
           <View style={styles.filterSection}>
-            <View style={styles.filterLabelRow}>
-              <Ionicons name="radio-button-on" size={20} color="#3B9AFF" />
-              <Text style={styles.filterLabel}>Khu vực</Text>
-            </View>
-            <View style={styles.dropdownRow}>
-              <View style={styles.dropdown}>
-                <Text style={styles.dropdownText}>Tinh/TP</Text>
-                <Ionicons name="chevron-down" size={18} color="#666" />
-              </View>
-              <View style={styles.dropdown}>
-                <Text style={styles.dropdownText}>Phường / Xã</Text>
-                <Ionicons name="chevron-down" size={18} color="#666" />
-              </View>
+            <Text style={styles.sectionHeader}>Khu vực</Text>
+            <View style={styles.locationContainer}>
+
+              {/* City Picker Trigger */}
+              <TouchableOpacity
+                style={[styles.dropdownBox, !selectedCity && styles.placeholderDropdown]}
+                onPress={() => setShowCityPicker(true)}
+              >
+                <Ionicons name="location-sharp" size={20} color={selectedCity ? "#3B9AFF" : "#999"} style={{ marginRight: 8 }} />
+                <Text style={[styles.dropdownText, !selectedCity && { color: '#999' }]}>
+                  {selectedCity || "Chọn Tỉnh/Thành phố"}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#999" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+
+              {/* District Picker Trigger */}
+              <TouchableOpacity
+                style={[styles.dropdownBox, !selectedDistrict && styles.placeholderDropdown, { marginTop: 12 }]}
+                onPress={() => {
+                  if (!selectedCity) {
+                    alert("Vui lòng chọn Tỉnh/Thành phố trước.");
+                  } else {
+                    setShowDistrictPicker(true);
+                  }
+                }}
+              >
+                <Ionicons name="map" size={20} color={selectedDistrict ? "#3B9AFF" : "#999"} style={{ marginRight: 8 }} />
+                <Text style={[styles.dropdownText, !selectedDistrict && { color: '#999' }]}>
+                  {selectedDistrict || "Chọn Quận/Huyện"}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#999" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+
             </View>
           </View>
 
           {/* Price Section */}
           <View style={styles.filterSection}>
-            <View style={styles.filterLabelRow}>
-              <Ionicons name="radio-button-on" size={20} color="#3B9AFF" />
-              <Text style={styles.filterLabel}>Giá <Text style={{ fontWeight: '400', fontSize: 14 }}>(70.000VNĐ/giờ)</Text></Text>
-            </View>
-            <View style={styles.priceRangeLabels}>
-              <Text style={styles.priceLabel}>0 VNĐ</Text>
-              <Text style={styles.priceLabel}>200.000 VNĐ</Text>
-            </View>
-            {/* Fake Slider Visual */}
-            <View style={styles.sliderTrack}>
-              <View style={[styles.sliderFill, { width: '40%' }]} />
-              <View style={styles.sliderThumb} />
+            <Text style={styles.sectionHeader}>Khoảng giá (VNĐ)</Text>
+            <View style={styles.priceInputRow}>
+              <View style={styles.priceInputContainer}>
+                <Text style={styles.priceInputLabel}>Từ</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  value={minPrice}
+                  onChangeText={setMinPrice}
+                />
+              </View>
+              <View style={styles.priceDash}></View>
+              <View style={styles.priceInputContainer}>
+                <Text style={styles.priceInputLabel}>Đến</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="500.000"
+                  keyboardType="numeric"
+                  value={maxPrice}
+                  onChangeText={setMaxPrice}
+                />
+              </View>
             </View>
           </View>
 
-          {/* Keyword Section */}
+          {/* Amenities / Keywords Section */}
           <View style={styles.filterSection}>
-            <Text style={styles.keywordsTitle}>Từ khóa</Text>
+            <Text style={styles.sectionHeader}>Tiện ích</Text>
             <View style={styles.keywordsContainer}>
-              <TouchableOpacity style={styles.keywordChip}>
-                <Text style={styles.keywordText}>Cầu lông gần tôi</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.keywordChip}>
-                <Text style={styles.keywordText}>Cầu lông xa tôi</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.keywordChip}>
-                <Text style={styles.keywordText}>Cầu lông Thủ Đức</Text>
-              </TouchableOpacity>
+              {['Wifi miễn phí', 'Chỗ để xe', 'Máy lạnh', 'Canteen', 'Shop cầu lông'].map((item) => (
+                <TouchableOpacity key={item} style={styles.keywordChip}>
+                  <Text style={styles.keywordText}>{item}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </ScrollView>
 
         {/* Footer Button */}
         <View style={styles.modalFooter}>
-          <TouchableOpacity style={styles.searchButton} onPress={() => setFilterVisible(false)}>
-            <Text style={styles.searchButtonText}>Tìm kiếm</Text>
+          <TouchableOpacity style={styles.applyButton} onPress={() => setFilterVisible(false)}>
+            <Text style={styles.applyButtonText}>Áp dụng</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Location Pickers */}
+        {renderLocationPicker(
+          showCityPicker,
+          "Chọn Tỉnh/Thành phố",
+          VIETNAM_LOCATIONS.map(l => l.name),
+          (city) => { setSelectedCity(city); setSelectedDistrict(''); },
+          () => setShowCityPicker(false)
+        )}
+
+        {renderLocationPicker(
+          showDistrictPicker,
+          "Chọn Quận/Huyện",
+          selectedCity ? (VIETNAM_LOCATIONS.find(l => l.name === selectedCity)?.districts || []) : [],
+          (district) => setSelectedDistrict(district),
+          () => setShowDistrictPicker(false)
+        )}
 
       </SafeAreaView>
     </Modal>
@@ -557,127 +648,105 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
-  modalBackBtn: {
-    padding: 4,
+  modalBackBtn: { padding: 4 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  modalContent: { padding: 20 },
+
+  filterSection: { marginBottom: 25 },
+  sectionHeader: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 12 },
+
+  locationContainer: {
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalContent: {
-    padding: 24,
-  },
-  filterSection: {
-    marginBottom: 30,
-  },
-  filterLabelRow: {
+  dropdownBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#3B9AFF',
-    marginLeft: 8,
-  },
-  dropdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dropdown: {
-    width: '48%',
+    backgroundColor: '#F7F7F7',
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderColor: '#eee'
+  },
+  placeholderDropdown: {
+    backgroundColor: '#fff',
+    borderColor: '#ddd'
   },
   dropdownText: {
-    color: '#999',
-    fontSize: 14,
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500'
   },
-  priceRangeLabels: {
+
+  // Price Input Styles
+  priceInputRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
   },
-  priceLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  sliderTrack: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    position: 'relative',
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#ccc'
-  },
-  sliderFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    left: '40%',
-    top: -6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    elevation: 3,
-  },
-  keywordsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 12,
-  },
-  keywordsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  keywordChip: {
-    backgroundColor: '#E0E0E0',
-    paddingVertical: 8,
+  priceInputContainer: {
+    flex: 1,
+    backgroundColor: '#F7F7F7',
+    borderRadius: 12,
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  priceInputLabel: {
+    color: '#999',
+    marginRight: 8,
+    fontSize: 14
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600'
+  },
+  priceDash: {
+    width: 10,
+    height: 2,
+    backgroundColor: '#ccc',
+    marginHorizontal: 10
+  },
+
+  // Keywords
+  keywordsContainer: { flexDirection: 'row', flexWrap: 'wrap' },
+  keywordChip: {
+    backgroundColor: '#F0F8FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     marginRight: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#D6E4FF'
   },
-  keywordText: {
-    color: '#666',
-    fontSize: 12,
-  },
+  keywordText: { color: '#3B9AFF', fontSize: 13, fontWeight: '500' },
+
+  // Footer
   modalFooter: {
-    padding: 16,
+    padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fff'
   },
-  searchButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+  applyButton: {
+    backgroundColor: '#3B9AFF',
     paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    shadowColor: "#3B9AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5
   },
-  searchButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  applyButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' }
 });

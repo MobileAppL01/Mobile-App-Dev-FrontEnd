@@ -129,13 +129,13 @@ export default function CourtDetailScreen() {
                         <Text style={styles.infoText}>{courtData.phone}</Text>
                     </View>
 
-                    <View style={styles.ratingRow}>
+                    <TouchableOpacity style={styles.ratingRow} onPress={() => navigation.navigate("ReviewScreen" as never)}>
                         <View style={styles.ratingBadge}>
                             <Ionicons name="star" size={12} color="#FFD700" />
                             <Text style={styles.ratingText}>{courtData.rating}</Text>
                         </View>
                         <Text style={styles.reviewText}>| {courtData.reviewCount} đánh giá</Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={styles.linkRow}>
                         <Text style={styles.websiteText}>Website: <Text style={{ color: '#333' }}>{courtData.website}</Text></Text>
@@ -188,14 +188,14 @@ export default function CourtDetailScreen() {
                             <Text style={[styles.complexHeaderText, { flex: 1 }]}>Thứ</Text>
                             <Text style={[styles.complexHeaderText, { flex: 1 }]}>Khung giờ</Text>
                             <Text style={[styles.complexHeaderText, { flex: 1 }]}>Cố định</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Vãng lai</Text>
+                            <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Vãng lai</Text>
                         </View>
                         {/* Row 1 */}
                         <View style={styles.complexRow}>
                             <Text style={[styles.complexCell, { flex: 1 }]}>Mặc định</Text>
                             <Text style={[styles.complexCell, { flex: 1 }]}>—</Text>
                             <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
+                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>45.000 đ</Text>
                         </View>
                         {/* Row 2 Group T2-T6 */}
                         <View style={styles.complexRow}>
@@ -206,17 +206,17 @@ export default function CourtDetailScreen() {
                                 <View style={styles.innerRow}>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>5h–16h</Text>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
+                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>45.000 đ</Text>
                                 </View>
                                 <View style={styles.innerRow}>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>16h–21h</Text>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>80.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>90.000 đ</Text>
+                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>90.000 đ</Text>
                                 </View>
                                 <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>21h–24h</Text>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>70.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>80.000 đ</Text>
+                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>80.000 đ</Text>
                                 </View>
                             </View>
                         </View>
@@ -229,12 +229,12 @@ export default function CourtDetailScreen() {
                                 <View style={styles.innerRow}>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>5h–9h</Text>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>70.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>80.000 đ</Text>
+                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>80.000 đ</Text>
                                 </View>
                                 <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>9h–16h</Text>
                                     <Text style={[styles.complexCell, { flex: 1 }]}>60.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>70.000 đ</Text>
+                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>70.000 đ</Text>
                                 </View>
                             </View>
                         </View>
@@ -247,15 +247,15 @@ export default function CourtDetailScreen() {
                     <View style={styles.complexTable}>
                         <View style={styles.complexHeader}>
                             <Text style={[styles.complexHeaderText, { flex: 1 }]}>Dịch vụ</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Giá</Text>
+                            <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Giá</Text>
                         </View>
                         <View style={styles.complexRow}>
                             <Text style={[styles.complexCell, { flex: 1 }]}>Thuê vợt</Text>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>50.000 đ</Text>
+                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>50.000 đ</Text>
                         </View>
-                        <View style={styles.complexRow}>
+                        <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
                             <Text style={[styles.complexCell, { flex: 1 }]}>Nước uống</Text>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>15.000 đ</Text>
+                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>15.000 đ</Text>
                         </View>
                     </View>
                 </View>
@@ -480,40 +480,50 @@ const styles = StyleSheet.create({
     },
     complexTable: {
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#E0E0E0',
+        borderRadius: 8,
+        overflow: 'hidden',
+        marginTop: 8,
+        backgroundColor: '#fff',
     },
     complexHeader: {
         flexDirection: 'row',
-        backgroundColor: '#82C2FF',
+        backgroundColor: '#F0F8FF', // Light AliceBlue
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
     },
     complexHeaderText: {
-        padding: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
         textAlign: 'center',
         fontWeight: 'bold',
-        fontSize: 12,
-        color: '#333',
+        fontSize: 13,
+        color: '#2C3E50',
         borderRightWidth: 1,
-        borderRightColor: '#aaa',
+        borderRightColor: '#E0E0E0',
     },
     complexRow: {
         flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: '#ccc',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
     },
     complexCell: {
-        padding: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
         textAlign: 'center',
-        fontSize: 12,
-        color: '#333',
+        fontSize: 13,
+        color: '#34495E',
         justifyContent: 'center',
+        alignItems: 'center',
         borderRightWidth: 1,
-        borderRightColor: '#eee',
+        borderRightColor: '#E0E0E0',
         textAlignVertical: 'center',
     },
     innerRow: {
         flexDirection: 'row',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#E0E0E0',
+        alignItems: 'center',
     }
 
 });
