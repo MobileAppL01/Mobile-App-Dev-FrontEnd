@@ -1,0 +1,482 @@
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    TextInput,
+    ScrollView,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Dimensions,
+    ActivityIndicator
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { bookingService } from '../../services/bookingService';
+
+const { width } = Dimensions.get('window');
+
+export default function BookingConfirmScreen() {
+    const navigation = useNavigation<any>();
+    const route = useRoute();
+    const { bookingInfo } = (route.params as any) || {};
+
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [note, setNote] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'VNPAY'>('CASH');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    if (!bookingInfo) return null;
+
+    const { location, court, displayDate, dateISO, slots, totalPrice, pricePerHour } = bookingInfo;
+
+    const formatSlots = () => {
+        if (slots.length === 0) return "";
+        const min = Math.min(...slots);
+        const max = Math.max(...slots) + 1;
+        const isContiguous = slots.length === (max - min);
+        if (isContiguous) {
+            return `${min}:00 - ${max}:00`;
+        }
+        return slots.map((s: number) => `${s}h`).join(', ');
+    };
+
+    const handleConfirm = async () => {
+        if (!name || !phone) {
+            Alert.alert("Thiếu thông tin", "Vui lòng nhập tên và số điện thoại để nhà sân liên hệ.");
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const bookingPayload = {
+                courtId: court.id,
+                bookingDate: dateISO,
+                startHours: slots,
+                paymentMethod
+            };
+            console.log("Creating booking with payload:", JSON.stringify(bookingPayload, null, 2));
+
+            // Create booking PENDING
+            const bookingResult = await bookingService.createBooking(bookingPayload);
+
+            if (bookingResult) {
+                if (paymentMethod === 'CASH') {
+                    Alert.alert(
+                        "Đặt sân thành công!",
+                        "Đơn đặt của bạn đã được ghi nhận. Vui lòng đến đúng giờ.",
+                        [{ text: "Về trang chủ", onPress: () => navigation.navigate("ClientTabs") }]
+                    );
+                } else {
+                    // Navigate to QR Screen
+                    navigation.replace("PaymentQR", {
+                        booking: bookingResult,
+                        totalPrice,
+                        bankInfo: {
+                            bankId: "MB",
+                            accountNo: "0335624796",
+                            accountName: "NGUYEN DINH PHONG",
+                            content: `THANH TOAN DON ${bookingResult.id}`
+                        }
+                    });
+                }
+            } else {
+                Alert.alert("Lỗi", "Đặt sân thất bại. Vui lòng thử lại.");
+            }
+        } catch (e: any) {
+            console.error("Booking Error Details:", e.response?.data || e.message);
+            Alert.alert("Lỗi", "Có lỗi xảy ra khi tạo đơn. " + (e.response?.data?.message || ""));
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={28} color="#1F2937" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Xác nhận đặt sân</Text>
+                <View style={{ width: 40 }} />
+            </View>
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+                    {/* Ticket Visual */}
+                    <View style={styles.ticketContainer}>
+                        {/* Upper Section (Main Info) */}
+                        <View style={styles.ticketUpper}>
+                            <View style={styles.clubInfoRow}>
+                                <View style={styles.iconContainer}>
+                                    <MaterialCommunityIcons name="badminton" size={24} color="#F59E0B" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.clubName}>{location.name}</Text>
+                                    <Text style={styles.clubAddress} numberOfLines={1}>{location.address}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.divider} />
+
+                            <View style={styles.detailRow}>
+                                <View>
+                                    <Text style={styles.label}>Ngày</Text>
+                                    <Text style={styles.value}>{displayDate}</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end' }}>
+                                    <Text style={styles.label}>Giờ</Text>
+                                    <Text style={styles.value}>{formatSlots()}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.detailRow}>
+                                <View>
+                                    <Text style={styles.label}>Sân</Text>
+                                    <Text style={styles.value}>{court.name}</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end' }}>
+                                    <Text style={styles.label}>Thời lượng</Text>
+                                    <Text style={styles.value}>{slots.length} tiếng</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Dashed Line */}
+                        <View style={styles.dashedLineContainer}>
+                            <View style={styles.halfCircleLeft} />
+                            <View style={styles.dashedLine} />
+                            <View style={styles.halfCircleRight} />
+                        </View>
+
+                        {/* Lower Section (Price) */}
+                        <View style={styles.ticketLower}>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.priceLabel}>Đơn giá</Text>
+                                <Text style={styles.priceValue}>{pricePerHour?.toLocaleString('vi-VN')}đ/h</Text>
+                            </View>
+                            <View style={[styles.detailRow, { marginTop: 10 }]}>
+                                <Text style={styles.totalLabel}>TỔNG CỘNG</Text>
+                                <Text style={styles.totalValue}>{totalPrice.toLocaleString('vi-VN')}đ</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Information Form */}
+                    <Text style={styles.sectionTitle}>Thông tin liên hệ</Text>
+                    <View style={styles.formCard}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Tên của bạn <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nhập họ và tên"
+                                value={name}
+                                onChangeText={setName}
+                            />
+                        </View>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Số điện thoại <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nhập số điện thoại"
+                                keyboardType="phone-pad"
+                                value={phone}
+                                onChangeText={setPhone}
+                            />
+                        </View>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Ghi chú</Text>
+                            <TextInput
+                                style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                                placeholder="Ghi chú thêm cho chủ sân..."
+                                multiline
+                                value={note}
+                                onChangeText={setNote}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Payment Method */}
+                    <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+                    <View style={styles.rowBetween}>
+                        <TouchableOpacity
+                            style={[styles.paymentCard, paymentMethod === 'CASH' && styles.paymentCardActive]}
+                            onPress={() => setPaymentMethod('CASH')}
+                        >
+                            <MaterialCommunityIcons name="cash" size={24} color={paymentMethod === 'CASH' ? '#3B82F6' : '#6B7280'} />
+                            <Text style={[styles.paymentText, paymentMethod === 'CASH' && styles.paymentTextActive]}>Tiền mặt</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.paymentCard, paymentMethod === 'VNPAY' && styles.paymentCardActive]}
+                            onPress={() => setPaymentMethod('VNPAY')}
+                        >
+                            <MaterialCommunityIcons name="bank-transfer" size={24} color={paymentMethod === 'VNPAY' ? '#3B82F6' : '#6B7280'} />
+                            <Text style={[styles.paymentText, paymentMethod === 'VNPAY' && styles.paymentTextActive]}>Chuyển khoản</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </ScrollView>
+            </KeyboardAvoidingView>
+
+            {/* Bottom Bar */}
+            <View style={styles.footer}>
+                <View>
+                    <Text style={styles.footerTotalLabel}>Thành tiền (tạm tính)</Text>
+                    <Text style={styles.footerTotalValue}>{totalPrice.toLocaleString('vi-VN')}đ</Text>
+                </View>
+                <TouchableOpacity
+                    style={[styles.confirmButton, isProcessing && { opacity: 0.7 }]}
+                    onPress={handleConfirm}
+                    disabled={isProcessing}
+                >
+                    {isProcessing ? (
+                        <ActivityIndicator color="white" />
+                    ) : (
+                        <Text style={styles.confirmButtonText}>XÁC NHẬN</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F3F4F6',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#FFFFFF',
+    },
+    backButton: {
+        padding: 8,
+        borderRadius: 20,
+        backgroundColor: '#F9FAFB',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+    },
+    scrollContent: {
+        padding: 16,
+        paddingBottom: 100,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#374151',
+        marginBottom: 12,
+        marginTop: 20,
+        marginLeft: 4
+    },
+    // Ticket Styles
+    ticketContainer: {
+        backgroundColor: 'transparent',
+    },
+    ticketUpper: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        padding: 20,
+    },
+    ticketLower: {
+        backgroundColor: 'white',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        padding: 20,
+    },
+    dashedLineContainer: {
+        height: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+        zIndex: 10
+    },
+    halfCircleLeft: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#F3F4F6', // match screen bg
+        marginLeft: -10,
+    },
+    halfCircleRight: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#F3F4F6', // match screen bg
+        marginRight: -10,
+    },
+    dashedLine: {
+        flex: 1,
+        height: 1,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        borderRadius: 1,
+        backgroundColor: 'white' // Mask
+    },
+    // Inside Ticket
+    clubInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16
+    },
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#FEF3C7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12
+    },
+    clubName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#111827'
+    },
+    clubAddress: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 2
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F3F4F6',
+        marginVertical: 16
+    },
+    detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        alignItems: 'center'
+    },
+    label: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginBottom: 4
+    },
+    value: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1F2937'
+    },
+    priceLabel: {
+        fontSize: 14,
+        color: '#6B7280'
+    },
+    priceValue: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#374151'
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1F2937'
+    },
+    totalValue: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#F59E0B'
+    },
+    // Form
+    formCard: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+    },
+    inputGroup: {
+        marginBottom: 16
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#374151',
+        marginBottom: 8
+    },
+    input: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: 14,
+        color: '#111827'
+    },
+    // Payment
+    rowBetween: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12
+    },
+    paymentCard: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'transparent',
+        gap: 8
+    },
+    paymentCardActive: {
+        borderColor: '#3B82F6',
+        backgroundColor: '#EFF6FF'
+    },
+    paymentText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#6B7280'
+    },
+    paymentTextActive: {
+        color: '#3B82F6'
+    },
+    // Footer
+    footer: {
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+    },
+    footerTotalLabel: {
+        fontSize: 12,
+        color: '#6B7280'
+    },
+    footerTotalValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937'
+    },
+    confirmButton: {
+        backgroundColor: '#3B82F6',
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 12
+    },
+    confirmButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16
+    }
+});

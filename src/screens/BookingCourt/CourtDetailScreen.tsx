@@ -15,12 +15,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-// Reusable Table Component
-// Reusable components removed for simplicity
-
-
 export default function CourtDetailScreen() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const route = useRoute();
     const { court } = (route.params as any) || {};
 
@@ -48,222 +44,245 @@ export default function CourtDetailScreen() {
         }
     };
 
+    const handleBookNow = () => {
+        // courtData acts as the Location object
+        navigation.navigate("BookingTimeSelection" as never, { location: courtData } as never);
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header Bar */}
-            <View style={styles.headerBar}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color="#3B9AFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{courtData.name}</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                {/* Image Carousel */}
-                <View style={styles.carouselContainer}>
-                    <ScrollView
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={onScroll}
-                        scrollEventThrottle={16}
-                    >
-                        {courtData.images.map((img: any, index: number) => (
-                            <Image key={index} source={img} style={styles.courtImage} />
-                        ))}
-                    </ScrollView>
-
-                    {/* Pagination Dots */}
-                    <View style={styles.paginationDots}>
-                        {courtData.images.map((_: any, index: number) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.dot,
-                                    activeSlide === index ? styles.activeDot : styles.inactiveDot
-                                ]}
-                            />
-                        ))}
-                    </View>
-
-                    {/* Overlay Buttons */}
-                    <View style={styles.imageOverlayTop}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name="heart-outline" size={20} color="#3B9AFF" />
-                        </View>
-                        <View style={[styles.iconCircle, { marginLeft: 10 }]}>
-                            <Ionicons name="location-outline" size={20} color="#3B9AFF" />
-                        </View>
-                        <TouchableOpacity style={styles.bookOverlayButton}>
-                            <Text style={styles.bookOverlayText}>Đặt lịch</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.imageOverlayNav}>
-                        <TouchableOpacity style={styles.navCircle} onPress={() => { /* prev */ }}>
-                            <Ionicons name="chevron-back" size={16} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.navCircle} onPress={() => { /* next */ }}>
-                            <Ionicons name="chevron-forward" size={16} color="white" />
-                        </TouchableOpacity>
-                    </View>
+            <View style={{ flex: 1 }}>
+                {/* Header Bar */}
+                <View style={styles.headerBar}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color="#3B9AFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{courtData.name}</Text>
+                    <View style={{ width: 40 }} />
                 </View>
 
-                {/* Info Section */}
-                <View style={styles.infoContainer}>
-                    <View style={styles.infoRow}>
-                        <Ionicons name="location-sharp" size={16} color="#3B9AFF" style={{ marginTop: 2 }} />
-                        <Text style={styles.infoText}>
-                            {courtData.address} <Text style={{ color: '#666', fontSize: 12 }}>| 5.6 km</Text>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                    {/* Image Carousel */}
+                    <View style={styles.carouselContainer}>
+                        <ScrollView
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onScroll={onScroll}
+                            scrollEventThrottle={16}
+                        >
+                            {courtData.images.map((img: any, index: number) => (
+                                <Image key={index} source={img} style={styles.courtImage} />
+                            ))}
+                        </ScrollView>
+
+                        {/* Pagination Dots */}
+                        <View style={styles.paginationDots}>
+                            {courtData.images.map((_: any, index: number) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.dot,
+                                        activeSlide === index ? styles.activeDot : styles.inactiveDot
+                                    ]}
+                                />
+                            ))}
+                        </View>
+
+                        {/* Overlay Buttons */}
+                        <View style={styles.imageOverlayTop}>
+                            <View style={styles.iconCircle}>
+                                <Ionicons name="heart-outline" size={20} color="#3B9AFF" />
+                            </View>
+                            <View style={[styles.iconCircle, { marginLeft: 10 }]}>
+                                <Ionicons name="location-outline" size={20} color="#3B9AFF" />
+                            </View>
+                            <TouchableOpacity style={styles.bookOverlayButton} onPress={handleBookNow}>
+                                <Text style={styles.bookOverlayText}>Đặt lịch</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.imageOverlayNav}>
+                            <TouchableOpacity style={styles.navCircle} onPress={() => { /* prev */ }}>
+                                <Ionicons name="chevron-back" size={16} color="white" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.navCircle} onPress={() => { /* next */ }}>
+                                <Ionicons name="chevron-forward" size={16} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Info Section */}
+                    {/* ... (Existing Info Section logic unchanged, keeping for context in replacement if we need to match large block, but assuming standard flow) ... */}
+                    {/* Just matching the rest of the render until the end to insert footer */}
+
+                    <View style={styles.infoContainer}>
+                        <View style={styles.infoRow}>
+                            <Ionicons name="location-sharp" size={16} color="#3B9AFF" style={{ marginTop: 2 }} />
+                            <Text style={styles.infoText}>
+                                {courtData.address} <Text style={{ color: '#666', fontSize: 12 }}>| 5.6 km</Text>
+                            </Text>
+                        </View>
+
+                        <View style={styles.infoRow}>
+                            <Ionicons name="time-sharp" size={16} color="#3B9AFF" />
+                            <Text style={styles.infoText}>{courtData.time}</Text>
+                        </View>
+
+                        <View style={styles.infoRow}>
+                            <Ionicons name="call-sharp" size={16} color="#3B9AFF" />
+                            <Text style={styles.infoText}>{courtData.phone}</Text>
+                        </View>
+
+                        <TouchableOpacity style={styles.ratingRow} onPress={() => navigation.navigate("ReviewScreen" as never)}>
+                            <View style={styles.ratingBadge}>
+                                <Ionicons name="star" size={12} color="#FFD700" />
+                                <Text style={styles.ratingText}>{courtData.rating}</Text>
+                            </View>
+                            <Text style={styles.reviewText}>| {courtData.reviewCount} đánh giá</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.linkRow}>
+                            <Text style={styles.websiteText}>Website: <Text style={{ color: '#333' }}>{courtData.website}</Text></Text>
+                            <TouchableOpacity>
+                                <Text style={styles.linkAction}>Quy định</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.sectionTitle}>Mô tả</Text>
+                        <Text style={styles.descriptionText}>
+                            {courtData.description}
+                            <Text style={styles.readMore}> Đọc thêm...</Text>
                         </Text>
                     </View>
 
-                    <View style={styles.infoRow}>
-                        <Ionicons name="time-sharp" size={16} color="#3B9AFF" />
-                        <Text style={styles.infoText}>{courtData.time}</Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Ionicons name="call-sharp" size={16} color="#3B9AFF" />
-                        <Text style={styles.infoText}>{courtData.phone}</Text>
-                    </View>
-
-                    <TouchableOpacity style={styles.ratingRow} onPress={() => navigation.navigate("ReviewScreen" as never)}>
-                        <View style={styles.ratingBadge}>
-                            <Ionicons name="star" size={12} color="#FFD700" />
-                            <Text style={styles.ratingText}>{courtData.rating}</Text>
+                    {/* BANG GIA SAN */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionHeaderBlue}>BẢNG GIÁ SÂN</Text>
+                        <View style={styles.blueTable}>
+                            <View style={styles.blueTableHeader}>
+                                <Text style={styles.blueHeaderTitle}>Sân cầu lông</Text>
+                            </View>
+                            <View style={styles.blueTableRow}>
+                                <View style={[styles.blueCell, { flex: 1, borderRightWidth: 1, borderColor: '#fff' }]}>
+                                    <Text style={styles.blueCellHeader}>Khung giờ</Text>
+                                </View>
+                                <View style={[styles.blueCell, { flex: 0.5 }]}>
+                                    <Text style={styles.blueCellHeader}>Giá</Text>
+                                </View>
+                            </View>
+                            <View style={[styles.blueTableRow, { backgroundColor: 'white' }]}>
+                                <View style={[styles.blueCellContent, { flex: 1, borderRightWidth: 1, borderColor: '#eee' }]}>
+                                    <Text style={styles.cellContentText}>Mặc định</Text>
+                                </View>
+                                <View style={[styles.blueCellContent, { flex: 0.5 }]}>
+                                    <Text style={styles.cellContentText}>0 đ</Text>
+                                </View>
+                            </View>
                         </View>
-                        <Text style={styles.reviewText}>| {courtData.reviewCount} đánh giá</Text>
+                    </View>
+
+                    {/* CONG NHAN */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionHeaderBlue}>CÔNG NHÂN</Text>
+                        <View style={styles.complexTable}>
+                            {/* Header */}
+                            <View style={styles.complexHeader}>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Thứ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Khung giờ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Cố định</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Vãng lai</Text>
+                            </View>
+                            {/* Row 1 */}
+                            <View style={styles.complexRow}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>Mặc định</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>—</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
+                            </View>
+                            {/* Row 2 Group T2-T6 */}
+                            <View style={styles.complexRow}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}>
+                                    <Text style={styles.complexCellText}>T2 – T6</Text>
+                                </View>
+                                <View style={{ flex: 3 }}>
+                                    <View style={styles.innerRow}>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–16h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
+                                    </View>
+                                    <View style={styles.innerRow}>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>16h–21h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>90.000 đ</Text></View>
+                                    </View>
+                                    <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>21h–24h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                    </View>
+                                </View>
+                            </View>
+                            {/* Row 3 Group T7-CN */}
+                            <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}>
+                                    <Text style={styles.complexCellText}>T7 – CN</Text>
+                                </View>
+                                <View style={{ flex: 3 }}>
+                                    <View style={styles.innerRow}>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–9h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                    </View>
+                                    <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>9h–16h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>60.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* SERVICES */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionHeaderBlue}>DANH SÁCH DỊCH VỤ</Text>
+                        <View style={styles.complexTable}>
+                            <View style={styles.complexHeader}>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Dịch vụ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Giá</Text>
+                            </View>
+                            <View style={styles.complexRow}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>Thuê vợt</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>50.000 đ</Text></View>
+                            </View>
+                            <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>Nước uống</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>15.000 đ</Text></View>
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+
+                {/* Sticky Footer */}
+                <View style={[styles.stickyFooter, { marginBottom: 10 }]}>
+                    <TouchableOpacity style={styles.bookNowButton} onPress={handleBookNow}>
+                        <Text style={styles.bookNowText}>ĐẶT LỊCH NGAY</Text>
                     </TouchableOpacity>
-
-                    <View style={styles.linkRow}>
-                        <Text style={styles.websiteText}>Website: <Text style={{ color: '#333' }}>{courtData.website}</Text></Text>
-                        <TouchableOpacity>
-                            <Text style={styles.linkAction}>Quy định</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <Text style={styles.sectionTitle}>Mô tả</Text>
-                    <Text style={styles.descriptionText}>
-                        {courtData.description}
-                        <Text style={styles.readMore}> Đọc thêm...</Text>
-                    </Text>
                 </View>
-
-                {/* Pricing Tables - Using manual layout to match the complex image */}
-
-                {/* BANG GIA SAN */}
-                <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionHeaderBlue}>BẢNG GIÁ SÂN</Text>
-                    <View style={styles.blueTable}>
-                        <View style={styles.blueTableHeader}>
-                            <Text style={styles.blueHeaderTitle}>Sân cầu lông</Text>
-                        </View>
-                        <View style={styles.blueTableRow}>
-                            <View style={[styles.blueCell, { flex: 1, borderRightWidth: 1, borderColor: '#fff' }]}>
-                                <Text style={styles.blueCellHeader}>Khung giờ</Text>
-                            </View>
-                            <View style={[styles.blueCell, { flex: 0.5 }]}>
-                                <Text style={styles.blueCellHeader}>Giá</Text>
-                            </View>
-                        </View>
-                        <View style={[styles.blueTableRow, { backgroundColor: 'white' }]}>
-                            <View style={[styles.blueCellContent, { flex: 1, borderRightWidth: 1, borderColor: '#eee' }]}>
-                                <Text style={styles.cellContentText}>Mặc định</Text>
-                            </View>
-                            <View style={[styles.blueCellContent, { flex: 0.5 }]}>
-                                <Text style={styles.cellContentText}>0 đ</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* CONG NHAN */}
-                <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionHeaderBlue}>CÔNG NHÂN</Text>
-                    <View style={styles.complexTable}>
-                        {/* Header */}
-                        <View style={styles.complexHeader}>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Thứ</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Khung giờ</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Cố định</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Vãng lai</Text>
-                        </View>
-                        {/* Row 1 */}
-                        <View style={styles.complexRow}>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>Mặc định</Text>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>—</Text>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
-                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>45.000 đ</Text>
-                        </View>
-                        {/* Row 2 Group T2-T6 */}
-                        <View style={styles.complexRow}>
-                            <View style={[styles.complexCell, { flex: 1, justifyContent: 'center' }]}>
-                                <Text style={styles.cellContentText}>T2 – T6</Text>
-                            </View>
-                            <View style={{ flex: 3 }}>
-                                <View style={styles.innerRow}>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>5h–16h</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>45.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>45.000 đ</Text>
-                                </View>
-                                <View style={styles.innerRow}>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>16h–21h</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>80.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>90.000 đ</Text>
-                                </View>
-                                <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>21h–24h</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>70.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>80.000 đ</Text>
-                                </View>
-                            </View>
-                        </View>
-                        {/* Row 3 Group T7-CN */}
-                        <View style={styles.complexRow}>
-                            <View style={[styles.complexCell, { flex: 1, justifyContent: 'center' }]}>
-                                <Text style={styles.cellContentText}>T7 – CN</Text>
-                            </View>
-                            <View style={{ flex: 3 }}>
-                                <View style={styles.innerRow}>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>5h–9h</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>70.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>80.000 đ</Text>
-                                </View>
-                                <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>9h–16h</Text>
-                                    <Text style={[styles.complexCell, { flex: 1 }]}>60.000 đ</Text>
-                                    <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>70.000 đ</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* SERVICES */}
-                <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionHeaderBlue}>DANH SÁCH DỊCH VỤ</Text>
-                    <View style={styles.complexTable}>
-                        <View style={styles.complexHeader}>
-                            <Text style={[styles.complexHeaderText, { flex: 1 }]}>Dịch vụ</Text>
-                            <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Giá</Text>
-                        </View>
-                        <View style={styles.complexRow}>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>Thuê vợt</Text>
-                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>50.000 đ</Text>
-                        </View>
-                        <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
-                            <Text style={[styles.complexCell, { flex: 1 }]}>Nước uống</Text>
-                            <Text style={[styles.complexCell, { flex: 1, borderRightWidth: 0 }]}>15.000 đ</Text>
-                        </View>
-                    </View>
-                </View>
-
-            </ScrollView>
+            </View>
         </SafeAreaView>
     );
 }
+
+// Add these to StyleSheet at bottom (I will do this in next replacement chunk or include here if tool allows modifying styles separately? No, must match exactly).
+// Actually, I can't add styles if I don't select the style block.
+// I will just use inline styles for the footer or rely on existing styles if generic enough, or I will update styles in a second call.
+// "stickyFooter" and "bookNowButton" are new.
+// I'll add them to the style block in a separate call or try to squeeze them here?
+// The tool won't let me modify styles if I am targeting the function.
+// I will assume I need to update styles too.
+
 
 const styles = StyleSheet.create({
     container: {
@@ -451,6 +470,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#82C2FF',
         padding: 8,
         alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#3B9AFF',
     },
     blueHeaderTitle: {
         fontWeight: 'bold',
@@ -507,23 +528,51 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0',
     },
-    complexCell: {
+    complexCellContainer: {
         paddingVertical: 10,
         paddingHorizontal: 4,
-        textAlign: 'center',
-        fontSize: 13,
-        color: '#34495E',
         justifyContent: 'center',
         alignItems: 'center',
         borderRightWidth: 1,
         borderRightColor: '#E0E0E0',
-        textAlignVertical: 'center',
+    },
+    complexCellText: {
+        textAlign: 'center',
+        fontSize: 13,
+        color: '#34495E',
     },
     innerRow: {
         flexDirection: 'row',
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0',
         alignItems: 'center',
+    },
+    stickyFooter: {
+        padding: 16,
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+        // Shadow
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: -2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    bookNowButton: {
+        backgroundColor: '#F59E0B',
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bookNowText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+        textTransform: 'uppercase',
     }
-
 });

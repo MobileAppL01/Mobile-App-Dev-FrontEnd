@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,119 +16,22 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
+import { locationService } from '../../services/locationService';
+import { LocationDTO } from '../../types/location';
 
 const { width, height } = Dimensions.get('window');
 
-// --- Types ---
 export interface Court {
   id: number;
   name: string;
   address: string;
   time: string;
   image: any;
+  price: number;
 }
 
 // --- Sample Data (Expanded) ---
-const INITIAL_COURTS: Court[] = [
-  {
-    id: 1,
-    name: "Thanh Da Badminton Court",
-    address: "353/7A Binh Quoi, Ward 28, Binh Thanh, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 2,
-    name: "Nghia Badminton Court",
-    address: "123 Pham Van Dong, Thu Duc, HCMC",
-    time: "8:00 AM - 10:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 3,
-    name: "Family Badminton Court",
-    address: "45 Nguyen Trai, District 1, HCMC",
-    time: "7:00 AM - 9:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 4,
-    name: "Bach Khoa Badminton Court",
-    address: "268 Ly Thuong Kiet, District 10, HCMC",
-    time: "6:00 AM - 11:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 5,
-    name: "Buon Ho Badminton Court",
-    address: "Dak Lak Province",
-    time: "5:00 AM - 8:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 6,
-    name: "Buon Me Thuot Badminton Court",
-    address: "Dak Lak Province",
-    time: "9:00 AM - 10:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 7,
-    name: "Victory Court",
-    address: "Tan Binh District, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 8,
-    name: "Galaxy Court",
-    address: "District 7, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 9,
-    name: "Sunshine Court",
-    address: "District 2, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 10,
-    name: "Moonlight Court",
-    address: "District 3, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 11,
-    name: "Star Court",
-    address: "District 5, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 12,
-    name: "Ocean Court",
-    address: "Phu Nhuan, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court2.png"),
-  },
-  {
-    id: 13,
-    name: "Forest Court",
-    address: "Go Vap, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court1.png"),
-  },
-  {
-    id: 14,
-    name: "Sky Court",
-    address: "Binh Tan, HCMC",
-    time: "9:00 AM - 11:00 PM",
-    image: require("../../assets/images/court2.png"),
-  }
-];
+// const INITIAL_COURTS: Court[] = [...]; // Hardcode removed
 
 const ITEMS_PER_PAGE = 6;
 
@@ -138,7 +41,67 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
 
   // Use state data (could be filtered later)
-  const [courtsData, setCourtsData] = useState(INITIAL_COURTS);
+  const [courtsData, setCourtsData] = useState<Court[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCourts();
+  }, []);
+
+  const fetchCourts = async (filters?: { city?: string; district?: string; min?: number; max?: number }) => {
+    try {
+      setIsLoading(true);
+
+      let data: LocationDTO[] = [];
+
+      // 1. Fetch from API based on location (Address search)
+      if (filters?.city || filters?.district) {
+        const searchTerm = `${filters.district || ''} ${filters.city || ''}`.trim();
+        data = await locationService.getLocationsByAddress(searchTerm);
+      } else {
+        data = await locationService.getAllLocations();
+      }
+
+      // 2. Map to Court Interface
+      let mappedCourts: Court[] = data.map((item: LocationDTO) => ({
+        id: item.id,
+        name: item.name,
+        address: item.address,
+        time: "6:00 AM - 10:00 PM",
+        image: item.id % 2 === 0 ? require("../../assets/images/court2.png") : require("../../assets/images/court1.png"),
+        price: item.pricePerHour
+      }));
+
+      // 3. Client-side filtering for Price
+      if (filters?.min !== undefined && filters?.min !== null && !isNaN(filters.min)) {
+        mappedCourts = mappedCourts.filter(c => c.price >= filters.min!);
+      }
+      if (filters?.max !== undefined && filters?.max !== null && !isNaN(filters.max)) {
+        mappedCourts = mappedCourts.filter(c => c.price <= filters.max!);
+      }
+
+      setCourtsData(mappedCourts);
+      // Reset Page to 1 when filtering
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("Failed to fetch courts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApplyFilter = () => {
+    const min = minPrice ? parseInt(minPrice) : undefined;
+    const max = maxPrice ? parseInt(maxPrice) : undefined;
+
+    fetchCourts({
+      city: selectedCity,
+      district: selectedDistrict,
+      min,
+      max
+    });
+    setFilterVisible(false);
+  };
 
   // Filter States
   const [selectedCity, setSelectedCity] = useState('');
@@ -419,7 +382,7 @@ export default function HomeScreen() {
 
         {/* Footer Button */}
         <View style={styles.modalFooter}>
-          <TouchableOpacity style={styles.applyButton} onPress={() => setFilterVisible(false)}>
+          <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilter}>
             <Text style={styles.applyButtonText}>Áp dụng</Text>
           </TouchableOpacity>
         </View>

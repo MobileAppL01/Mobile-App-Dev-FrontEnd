@@ -18,6 +18,9 @@ import ManagerHomeScreen from "../screens/ManagingCourt/ManagerHomeScreen";
 import RevenueScreen from "../screens/ManagingCourt/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
 import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
+import BookingTimeSelectionScreen from '../screens/BookingCourt/BookingTimeSelectionScreen';
+import BookingConfirmScreen from '../screens/BookingCourt/BookingConfirmScreen';
+import PaymentQRScreen from '../screens/Payment/PaymentQRScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -25,14 +28,16 @@ export type RootStackParamList = {
   OnboardingSecond: undefined;
   OnboardingThird: undefined;
   PreLogin: undefined;
-  Home: undefined;
-  SignUp: { method: "email" | "phone" };
   Login: undefined;
+  SignUp: undefined;
   ManagerHome: undefined;
   ManagerRevenue: undefined;
   ClientTabs: undefined;
-  CourtDetail: { court: any };
-  ReviewScreen: undefined;
+  CourtDetail: { location: any };
+  ReviewScreen: { locationId: string };
+  BookingTimeSelection: { location: any };
+  BookingConfirm: { bookingInfo: any };
+  PaymentQR: { booking: any; totalPrice: number; bankInfo: any };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -57,35 +62,32 @@ export default function RootNavigator() {
               <Stack.Screen name="ClientTabs" component={ClientTabs} />
               <Stack.Screen name="CourtDetail" component={CourtDetailScreen} />
               <Stack.Screen name="ReviewScreen" component={ReviewScreen} />
+              <Stack.Screen name="BookingTimeSelection" component={BookingTimeSelectionScreen} />
+              <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+              <Stack.Screen name="PaymentQR" component={PaymentQRScreen} />
             </>
           )
         ) : (
           // === NOT LOGGED IN ===
           <>
-            {/* Show Onboarding first if not seen */}
             {!hasSeenOnboarding && (
               <>
-                <Stack.Screen
-                  name="OnboardingFirst"
-                  component={OnboardingScreenFirst}
-                />
-                <Stack.Screen
-                  name="OnboardingSecond"
-                  component={OnboardingScreenSecond}
-                />
-                <Stack.Screen
-                  name="OnboardingThird"
-                  component={OnboardingScreenThird}
-                />
+                <Stack.Screen name="OnboardingFirst" component={OnboardingScreenFirst} />
+                <Stack.Screen name="OnboardingSecond" component={OnboardingScreenSecond} />
+                <Stack.Screen name="OnboardingThird" component={OnboardingScreenThird} />
               </>
             )}
-
-            {/* Then Splash */}
             <Stack.Screen name="Splash" component={SplashScreen} />
-
             <Stack.Screen name="PreLogin" component={PreLogin} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
+
+            {/* Guest Access */}
+            <Stack.Screen name="ClientTabs" component={ClientTabs} />
+            <Stack.Screen name="CourtDetail" component={CourtDetailScreen} />
+            <Stack.Screen name="BookingTimeSelection" component={BookingTimeSelectionScreen} />
+            <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+            <Stack.Screen name="PaymentQR" component={PaymentQRScreen} />
           </>
         )}
       </Stack.Navigator>
