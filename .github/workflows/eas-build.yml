@@ -1,0 +1,72 @@
+name: EAS Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # runs-on: macos-latest # nếu build iOS
+    environment: EAS publish
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: EAS Build
+        run: eas build --platform android --non-interactive
+
+      # build iOS:
+      #   run: eas build --platform ios --non-interactive
+
+      # Build cả hai:
+      #   run: eas build --platform all --non-interactive
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: EAS publish
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      # Upload to stores
+      # - name: Submit to app stores
+      #   run: eas submit --platform android --non-interactive
+      #   env:
+      #     EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: Expo Publish
+        run: eas update --branch production --message "Auto publish from GitHub Actions" 
+        env:
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
