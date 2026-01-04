@@ -8,6 +8,7 @@ import { HomeIcon, NotificationIcon, HistoryIcon, InfoIcon } from '../components
 // Import Screens
 import HomeScreen from '../screens/BookingCourt/HomeScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
+import BookingHistoryScreen from '../screens/BookingHistory/BookingHistory';
 
 // --- Placeholder Screens ---
 const NotificationScreen = () => (
@@ -71,7 +72,7 @@ const ClientTabs = () => {
     >
       <Tab.Screen name="Trang Chủ" component={HomeScreen} />
       <Tab.Screen name="Thông Báo" component={NotificationScreen} />
-      <Tab.Screen name="Lịch Sử" component={HistoryScreen} />
+      <Tab.Screen name="Lịch Sử" component={BookingHistoryScreen} />
       <Tab.Screen name="Thông Tin" component={UserProfileScreen} />
     </Tab.Navigator>
   );
