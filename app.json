@@ -28,7 +28,9 @@
       "favicon": "./src/assets/icons/favicon.png"
     },
     "extra": {
-      "eas": {},
+      "eas": {
+        "projectId": "a703c044-9af5-46ed-bf0a-271050cfda85"
+      },
       "router": {}
     },
     "plugins": [
@@ -46,6 +48,7 @@
     ],
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "owner": "clearwind"
   }
 }
