@@ -28,9 +28,7 @@
       "favicon": "./src/assets/icons/favicon.png"
     },
     "extra": {
-      "eas": {
-        "projectId": "d079c01d-a57a-4434-8d86-bd555dbab6bc"
-      },
+      "eas": {},
       "router": {}
     },
     "plugins": [
@@ -48,10 +46,6 @@
     ],
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/d079c01d-a57a-4434-8d86-bd555dbab6bc"
-    },
-    "owner": "quang_chill"
+    }
   }
 }
