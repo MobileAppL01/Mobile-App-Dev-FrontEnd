@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./src/assets/icons/app_icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./src/assets/icons/splash-icon.png",
       "resizeMode": "contain",
@@ -43,9 +43,7 @@
           "project": "react-native-mobile-app",
           "organization": "hcmut-nu"
         }
-      ],
-      "@sentry/react-native",
-      "expo-web-browser"
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"
