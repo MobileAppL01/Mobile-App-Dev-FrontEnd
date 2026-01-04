@@ -59,7 +59,7 @@ const ClientTabs = () => {
           } else if (route.name === 'Thông Tin') {
             iconName = focused ? 'person' : 'person-outline';
           }
-          return <Ionicons name={iconName} size={24} color={color} />;
+          return <Ionicons name={iconName as any} size={24} color={color} />;
         },
       })}
     >

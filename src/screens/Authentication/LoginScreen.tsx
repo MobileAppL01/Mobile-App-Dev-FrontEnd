@@ -46,6 +46,9 @@ const LoginScreen = ({ navigation }: LoginProps) => {
       email: "lythanh@gmail.com",
       role: "CLIENT",
       avatar: "https://i.pravatar.cc/300",
+      phone: "0361234567",
+      gender: "Male",
+      dob: "01/01/2000"
     };
     console.log("mockdata", mockUserData);
 
