@@ -7,17 +7,17 @@ import ClientTabs from "./ClientTabs";
 import { useAuthStore } from "../store/useAuthStore";
 
 // Import Screens
-import SplashScreen from "../screens/SplashScreen"; // Import SplashScreen
+import SplashScreen from "../screens/SplashScreen";
 import OnboardingScreenFirst from "../screens/Onboarding/OnboardingScreenFirst";
 import OnboardingScreenSecond from "../screens/Onboarding/OnboardingScreenSecond";
 import OnboardingScreenThird from "../screens/Onboarding/OnboardingScreenThird";
-// import HomeScreen from "../screens/BookingCourt/HomeScreen"; // Unused
 import PreLogin from "../screens/Onboarding/PreLogin";
 import SignUpScreen from "../screens/Authentication/SignUpScreen";
 import LoginScreen from "../screens/Authentication/LoginScreen";
 import ManagerHomeScreen from "../screens/ManagingCourt/ManagerHomeScreen";
 import RevenueScreen from "../screens/ManagingCourt/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
+import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -32,6 +32,7 @@ export type RootStackParamList = {
   ManagerRevenue: undefined;
   ClientTabs: undefined;
   CourtDetail: { court: any };
+  ReviewScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -53,6 +54,7 @@ export default function RootNavigator() {
             <>
               <Stack.Screen name="ClientTabs" component={ClientTabs} />
               <Stack.Screen name="CourtDetail" component={CourtDetailScreen} />
+              <Stack.Screen name="ReviewScreen" component={ReviewScreen} />
             </>
           )
         ) : (

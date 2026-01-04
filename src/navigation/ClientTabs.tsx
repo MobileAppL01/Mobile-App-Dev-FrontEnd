@@ -1,9 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
-
-// Import Icons
-import { HomeIcon, NotificationIcon, HistoryIcon, InfoIcon } from '../components/CustomIcons';
+import { Ionicons } from '@expo/vector-icons';
 
 // Import Screens
 import HomeScreen from '../screens/BookingCourt/HomeScreen';
@@ -23,12 +21,6 @@ const HistoryScreen = () => (
   </View>
 );
 
-const InfoScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Thông Tin (Profile)</Text>
-  </View>
-);
-
 const Tab = createBottomTabNavigator();
 
 const ClientTabs = () => {
@@ -36,11 +28,11 @@ const ClientTabs = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#3B9AFF', // Blue active
-        tabBarInactiveTintColor: '#5E5E5E', // Grey inactive (matching SVG default)
+        tabBarActiveTintColor: '#3B9AFF',
+        tabBarInactiveTintColor: '#5E5E5E',
         tabBarStyle: {
-          height: 85,
-          paddingBottom: 10,
+          height: 80,
+          paddingBottom: 20,
           paddingTop: 10,
           backgroundColor: 'white',
           borderTopWidth: 1,
@@ -54,19 +46,20 @@ const ClientTabs = () => {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
-          marginTop: 5,
+          marginTop: 2,
         },
         tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
           if (route.name === 'Trang Chủ') {
-            return <HomeIcon color={color} size={24} />;
+            iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Thông Báo') {
-            return <NotificationIcon color={color} size={24} />;
+            iconName = focused ? 'notifications' : 'notifications-outline';
           } else if (route.name === 'Lịch Sử') {
-            return <HistoryIcon color={color} size={24} />;
+            iconName = focused ? 'time' : 'time-outline';
           } else if (route.name === 'Thông Tin') {
-            return <InfoIcon color={color} size={24} />;
+            iconName = focused ? 'person' : 'person-outline';
           }
-          return null;
+          return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
