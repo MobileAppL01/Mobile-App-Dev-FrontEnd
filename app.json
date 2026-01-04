@@ -44,7 +44,8 @@
           "project": "react-native-mobile-app",
           "organization": "hcmut-nu"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
