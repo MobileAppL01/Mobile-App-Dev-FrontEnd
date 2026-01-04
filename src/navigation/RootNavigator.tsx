@@ -38,14 +38,16 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
-  const { isAuthenticated, hasSeenOnboarding, user } = useAuthStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const hasSeenOnboarding = useAuthStore(state => state.hasSeenOnboarding);
+  const userRole = useAuthStore(state => state.user?.role);
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           // === LOGGED IN ===
-          user?.role === "MANAGER" ? (
+          userRole === "MANAGER" ? (
             <>
               <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} />
               <Stack.Screen name="ManagerRevenue" component={RevenueScreen} />

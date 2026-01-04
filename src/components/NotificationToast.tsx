@@ -5,7 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 export default function NotificationToast() {
-    const { visible, message, type, hideNotification } = useNotificationStore();
+    const visible = useNotificationStore(state => state.visible);
+    const message = useNotificationStore(state => state.message);
+    const type = useNotificationStore(state => state.type);
+    const hideNotification = useNotificationStore(state => state.hideNotification);
 
     if (!visible) return null;
 

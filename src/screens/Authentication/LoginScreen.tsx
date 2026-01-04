@@ -15,49 +15,64 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
-// 1. Import Store
 import { useAuthStore } from "../../store/useAuthStore";
-// 2. Import Theme
+import { useNotificationStore } from "../../store/useNotificationStore";
 import { COLORS, SIZES, COMMON_STYLES, AUTH_STYLES } from "../../constants/theme";
 
 import LogoDark from "../../assets/logos/logo_dark.svg";
 
 const { width } = Dimensions.get("window");
 
-// Định nghĩa Type cho Props
 type LoginProps = StackScreenProps<RootStackParamList, "Login">;
 
 const LoginScreen = ({ navigation }: LoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const { isAuthenticated, hasSeenOnboarding } = useAuthStore();
-  const login = useAuthStore((state) => state.login);
 
-  const handleLogin = () => {
-    // Xử lý logic đăng nhập tại đây (API call, validation...)
-    console.log("Login with:", email, password);
-    // const isAuthenticated = true;
-    // // Ví dụ: Nếu thành công thì chuyển vào trang chủ
-    // navigation.navigate('Home');
-    // // Hoặc cập nhật State global để RootNavigator tự chuyển đổi
-    const mockUserData = {
-      id: "123",
-      name: "lyquang",
-      email: "lythanh@gmail.com",
-      role: "CLIENT",
-      avatar: "https://i.pravatar.cc/300",
-      phone: "0361234567",
-      gender: "Male",
-      dob: "01/01/2000"
-    };
-    console.log("mockdata", mockUserData);
+  // Lấy các state và actions từ store
+  // Lấy các state và actions từ store
+  const login = useAuthStore(state => state.login);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const error = useAuthStore(state => state.error);
+  const setError = useAuthStore(state => state.setError);
 
-    // 3. QUAN TRỌNG: Gọi hàm login của Store
-    // Hành động này sẽ set isAuthenticated = true
-    // RootNavigator sẽ tự động chuyển sang màn hình Home
-    login(mockUserData);
-    // Lưu ý: Không cần gọi navigation.navigate('Home') nếu RootNavigator
-    // đã được cấu hình điều kiện (Conditional Rendering) theo biến isAuthenticated.
+  React.useEffect(() => { setError(null); }, []);
+
+  // Notification
+  const showNotification = useNotificationStore(state => state.showNotification);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      // setError("Vui lòng nhập đầy đủ thông tin!"); // Inline error
+      showNotification("Vui lòng nhập đầy đủ thông tin!", "error");
+      return;
+    }
+    try {
+      await login({ username: email, password });
+      showNotification("Đăng nhập thành công!", "success");
+    } catch (err: any) {
+      let msg = "Đăng nhập thất bại. Vui lòng thử lại.";
+
+      // Ưu tiên lấy message từ backend
+      if (err.response) {
+        const { data, status } = err.response;
+
+        // Xử lý message cụ thể từ backend
+        if (data?.message === "Bad credentials") {
+          msg = "Sai tên đăng nhập hoặc mật khẩu!";
+        } else if (data?.message) {
+          msg = data.message;
+        } else if (status === 400 || status === 401) {
+          msg = "Thông tin đăng nhập không chính xác!";
+        } else if (status >= 500) {
+          msg = "Lỗi hệ thống (500). Vui lòng thử lại sau.";
+        }
+      } else if (err.request) {
+        msg = "Không thể kết nối đến máy chủ. Kiểm tra mạng!";
+      }
+
+      showNotification(msg, "error");
+    }
   };
 
   return (
@@ -87,7 +102,10 @@ const LoginScreen = ({ navigation }: LoginProps) => {
             <Text style={styles.titleHighlight}>Đăng nhập</Text>
           </Text>
 
+
           <View style={styles.formContainer}>
+            {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
+
             <View style={styles.inputGroup}>
               <Text style={COMMON_STYLES.label}>Tên đăng nhập</Text>
               <TextInput
@@ -118,8 +136,14 @@ const LoginScreen = ({ navigation }: LoginProps) => {
             </TouchableOpacity>
 
             {/* Button Đăng nhập */}
-            <TouchableOpacity style={COMMON_STYLES.button} onPress={handleLogin}>
-              <Text style={COMMON_STYLES.buttonText}>Đăng nhập</Text>
+            <TouchableOpacity
+              style={[COMMON_STYLES.button, isLoading && { opacity: 0.7 }]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <Text style={COMMON_STYLES.buttonText}>
+                {isLoading ? "Đang xử lý..." : "Đăng nhập"}
+              </Text>
             </TouchableOpacity>
 
             <View style={COMMON_STYLES.footer}>

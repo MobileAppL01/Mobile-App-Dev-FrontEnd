@@ -12,7 +12,9 @@ const { width, height } = Dimensions.get("window");
 type Props = StackScreenProps<RootStackParamList, "Splash">;
 
 const SplashScreen = ({ navigation }: Props) => {
-    const { hasSeenOnboarding } = useAuthStore();
+    // const hasSeenOnboarding = useAuthStore(state => state.hasSeenOnboarding); // Unused currently but good practice
+    // Actually, logic is hardcoded to PreLogin for now. 
+    // Just remove destructuring to avoid subscription to full state.
 
     useEffect(() => {
         const timer = setTimeout(() => {

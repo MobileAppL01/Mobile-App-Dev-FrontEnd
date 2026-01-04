@@ -18,6 +18,8 @@ import { StackScreenProps } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { COLORS, SIZES, COMMON_STYLES, AUTH_STYLES } from "../../constants/theme";
 import LogoDark from "../../assets/logos/logo_dark.svg";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 // Define Props
 type SignUpProps = StackScreenProps<RootStackParamList, "SignUp">;
@@ -25,36 +27,74 @@ type SignUpProps = StackScreenProps<RootStackParamList, "SignUp">;
 const SignUpScreen = ({ navigation, route }: SignUpProps) => {
   const { method } = route.params;
 
-  // --- State ---
-  const [inputValue, setInputValue] = useState(""); // Use one state for Email OR Phone
+  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState(""); // Add Phone
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // State for toggling password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // --- Logic Helpers ---
-  const isEmail = method === "email";
+  // Lấy các state và actions từ store
+  // Lấy các state và actions từ store
+  const register = useAuthStore(state => state.register);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const error = useAuthStore(state => state.error);
+  const setError = useAuthStore(state => state.setError);
+  const showNotification = useNotificationStore(state => state.showNotification);
 
-  // Validation & Submit Handler
-  const handleRegister = () => {
-    // 1. Check Empty
-    if (!inputValue || !fullName || !password || !confirmPassword) {
-      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
+  React.useEffect(() => { setError(null); }, []);
+
+  const handleRegister = async () => {
+    // Kiểm tra thông tin đầu vào
+    if (!email || !fullName || !phone || !password || !confirmPassword) {
+      showNotification("Vui lòng điền đầy đủ thông tin", "error");
       return;
     }
 
-    // 2. Check Password Match
+    // Kiểm tra khớp mật khẩu
     if (password !== confirmPassword) {
-      Alert.alert("Lỗi", "Mật khẩu nhập lại không khớp");
+      showNotification("Mật khẩu nhập lại không khớp", "error");
       return;
     }
 
-    // 3. Success logic (API Call here)
-    console.log("Registering with:", { inputValue, fullName, password });
-    Alert.alert("Thành công", "Mã OTP đã được gửi!");
+    // Tách họ và tên
+    const nameParts = fullName.trim().split(" ");
+    const firstName = nameParts.length > 0 ? nameParts[0] : "";
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+    // Gọi API đăng ký
+    try {
+      await register({
+        email: email,
+        firstName: firstName || "User",
+        lastName: lastName || "Name",
+        phone: phone,
+        password: password
+      });
+
+      showNotification("Đăng ký thành công! Vui lòng đăng nhập.", "success");
+      navigation.navigate("Login");
+
+    } catch (err: any) {
+      let msg = "Đăng ký thất bại. Vui lòng thử lại.";
+      if (err.response) {
+        const { status } = err.response;
+        if (status === 400) {
+          msg = "Thông tin không hợp lệ (Email/SĐT sai hoặc thiếu)!";
+        } else if (status === 409) {
+          msg = "Email hoặc Số điện thoại đã được đăng ký!";
+        } else if (status >= 500) {
+          msg = "Lỗi hệ thống (500). Vui lòng thử lại sau.";
+        } else if (err.response.data && typeof err.response.data === 'string') {
+          msg = err.response.data;
+        }
+      } else if (err.request) {
+        msg = "Không thể kết nối đến máy chủ.";
+      }
+      showNotification(msg, "error");
+    }
   };
 
   return (
@@ -80,6 +120,7 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
           </View>
 
           <Text style={styles.title}>Đăng Ký</Text>
+          {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
 
           <View style={styles.formContainer}>
 
@@ -89,8 +130,8 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
                 style={COMMON_STYLES.input}
                 placeholder="example@gmail.com"
                 placeholderTextColor={COLORS.placeholder}
-                value={inputValue}
-                onChangeText={setInputValue}
+                value={email}
+                onChangeText={(t) => { setEmail(t); setError(null); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -103,8 +144,20 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
                 placeholder="Nguyễn Văn A"
                 placeholderTextColor={COLORS.placeholder}
                 value={fullName}
-                onChangeText={setFullName}
+                onChangeText={(t) => { setFullName(t); setError(null); }}
                 autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={COMMON_STYLES.label}>Số điện thoại</Text>
+              <TextInput
+                style={COMMON_STYLES.input}
+                placeholder="0912345678"
+                placeholderTextColor={COLORS.placeholder}
+                value={phone}
+                onChangeText={(t) => { setPhone(t); setError(null); }}
+                keyboardType="phone-pad"
               />
             </View>
 
@@ -112,12 +165,12 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
               <Text style={COMMON_STYLES.label}>Mật khẩu</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={[COMMON_STYLES.input, styles.passwordInput]} // Combine styles
+                  style={[COMMON_STYLES.input, styles.passwordInput]}
                   placeholder="abc123"
                   placeholderTextColor={COLORS.placeholder}
                   value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword} // Toggle logic
+                  onChangeText={(t) => { setPassword(t); setError(null); }}
+                  secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
@@ -140,7 +193,7 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
                   placeholder="abc123"
                   placeholderTextColor={COLORS.placeholder}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(t) => { setConfirmPassword(t); setError(null); }}
                   secureTextEntry={!showConfirmPassword}
                 />
                 <TouchableOpacity
@@ -156,8 +209,14 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-              <Text style={COMMON_STYLES.buttonText}>Gửi mã OTP</Text>
+            <TouchableOpacity
+              style={[styles.button, isLoading && { opacity: 0.7 }]}
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              <Text style={COMMON_STYLES.buttonText}>
+                {isLoading ? "Đang xử lý..." : "Đăng ký"}
+              </Text>
             </TouchableOpacity>
 
             <View style={COMMON_STYLES.footer}>
