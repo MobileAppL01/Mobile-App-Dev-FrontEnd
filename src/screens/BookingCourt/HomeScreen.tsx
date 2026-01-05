@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
+import { Header } from '../../components/Header';
 
 const { width, height } = Dimensions.get('window');
 
@@ -169,15 +170,7 @@ export default function HomeScreen() {
 
   const renderHeader = () => (
     <View>
-      <View style={styles.topBanner}>
-        <Text style={styles.topBannerText}>Tìm và đặt sân cầu lông của bạn dễ dàng – Mọi lúc, Mọi nơi!</Text>
-      </View>
-
-      <View style={styles.logoContainer}>
-        <Text style={styles.welcomeText}>Chào mừng bạn đến với</Text>
-        <LogoDark width={100} height={50} />
-      </View>
-
+      <Header/>
       <View style={styles.titleContainer}>
         <Text style={styles.mainTitle}>Đặt sân cầu lông bạn muốn!</Text>
         <View style={styles.separator} />

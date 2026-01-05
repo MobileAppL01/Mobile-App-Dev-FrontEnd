@@ -2,29 +2,31 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-// Import Screens
-import HomeScreen from '../screens/BookingCourt/HomeScreen';
+import ManagerHomeScreen from '../screens/ManagingCourt/ManagerHomeScreen';
+import RevenueScreen from '../screens/ManagingCourt/RevenueScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
-import BookingHistoryScreen from '../screens/BookingHistory/BookingHistory';
 
-// --- Placeholder Screens ---
 const NotificationScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Thông Báo</Text>
+    <Text>Màn hình Thông báo</Text>
   </View>
 );
 
+const CameraScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Màn hình Camera Giám sát</Text>
+  </View>
+);
 
 const Tab = createBottomTabNavigator();
 
-const ClientTabs = () => {
+const OwnerTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#3B9AFF',
-        tabBarInactiveTintColor: '#5E5E5E',
+        tabBarActiveTintColor: '#3B9AFF', // Màu xanh chủ đạo
+        tabBarInactiveTintColor: '#5E5E5E', // Màu xám khi không active
         tabBarStyle: {
           height: 80,
           paddingBottom: 20,
@@ -32,6 +34,7 @@ const ClientTabs = () => {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#F0F0F0',
+          // Đổ bóng (Shadow)
           elevation: 10,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -45,25 +48,31 @@ const ClientTabs = () => {
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === 'Trang Chủ') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Thông Báo') {
+
+          if (route.name === 'Sân của tôi') {
+            // Icon toà nhà/doanh nghiệp
+            iconName = focused ? 'business' : 'business-outline';
+          } else if (route.name === 'Thống kê') {
+            // Icon biểu đồ
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+          } else if (route.name === 'Thông báo') {
+            // Icon chuông
             iconName = focused ? 'notifications' : 'notifications-outline';
-          } else if (route.name === 'Lịch Sử') {
-            iconName = focused ? 'time' : 'time-outline';
           } else if (route.name === 'Thông Tin') {
             iconName = focused ? 'person' : 'person-outline';
           }
-          return <Ionicons name={iconName as any} size={24} color={color} />;
+
+          // Render Icon
+          return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Trang Chủ" component={HomeScreen} />
-      <Tab.Screen name="Thông Báo" component={NotificationScreen} />
-      <Tab.Screen name="Lịch Sử" component={BookingHistoryScreen} />
-      <Tab.Screen name="Thông Tin" component={UserProfileScreen} />
+      <Tab.Screen name="Sân của tôi" component={ManagerHomeScreen} />
+      <Tab.Screen name="Thống kê" component={RevenueScreen} />
+      <Tab.Screen name="Thông báo" component={NotificationScreen} />
+      <Tab.Screen name="Thông tin" component={UserProfileScreen} />
     </Tab.Navigator>
   );
 };
 
-export default ClientTabs;
+export default OwnerTabs;
