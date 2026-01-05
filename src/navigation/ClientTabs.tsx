@@ -15,11 +15,6 @@ const NotificationScreen = () => (
   </View>
 );
 
-const HistoryScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Lịch Sử</Text>
-  </View>
-);
 
 const Tab = createBottomTabNavigator();
 

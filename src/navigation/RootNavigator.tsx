@@ -14,10 +14,10 @@ import OnboardingScreenThird from "../screens/Onboarding/OnboardingScreenThird";
 import PreLogin from "../screens/Onboarding/PreLogin";
 import SignUpScreen from "../screens/Authentication/SignUpScreen";
 import LoginScreen from "../screens/Authentication/LoginScreen";
-import ManagerHomeScreen from "../screens/ManagingCourt/ManagerHomeScreen";
 import RevenueScreen from "../screens/ManagingCourt/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
 import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
+import OwnerTabs from "./OwnerTabs";
 import BookingTimeSelectionScreen from '../screens/BookingCourt/BookingTimeSelectionScreen';
 import BookingConfirmScreen from '../screens/BookingCourt/BookingConfirmScreen';
 import PaymentQRScreen from '../screens/Payment/PaymentQRScreen';
@@ -29,8 +29,12 @@ export type RootStackParamList = {
   OnboardingThird: undefined;
   PreLogin: undefined;
   Login: undefined;
+  ManagerRevenue: undefined;
+  ClientTabs: undefined;
+  OwnerTabs: undefined;
+  CourtDetail: { court: any };
+  ReviewScreen: undefined;
   SignUp: undefined;
-  ManagerHome: undefined;
   ManagerRevenue: undefined;
   ClientTabs: undefined;
   CourtDetail: { location: any };
@@ -43,19 +47,19 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const hasSeenOnboarding = useAuthStore(state => state.hasSeenOnboarding);
-  const userRole = useAuthStore(state => state.user?.role);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasSeenOnboarding = useAuthStore((state) => state.hasSeenOnboarding);
+  const userRole = useAuthStore((state) => state.user?.role);
+  console.log("userrole at Root\n", userRole);
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           // === LOGGED IN ===
-          userRole === "MANAGER" ? (
+          userRole === "ROLE_OWNER" ? (
             <>
-              <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} />
-              <Stack.Screen name="ManagerRevenue" component={RevenueScreen} />
+              <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
             </>
           ) : (
             <>
