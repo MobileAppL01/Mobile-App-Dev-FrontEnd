@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # runs-on: macos-latest # nếu build iOS
-    environment: EAS publish
+    # environment: EAS publish # Uncomment if you have set up a GitHub Environment
 
     steps:
       - name: Checkout repository
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
         run: npm ci --include=dev
@@ -30,18 +30,18 @@ jobs:
           token: ${{ secrets.EAS_ACCESS_TOKEN }}
 
       - name: EAS Build
-        run: eas build --platform android --non-interactive
+        run: eas build --platform android --profile production --non-interactive
 
       # build iOS:
-      #   run: eas build --platform ios --non-interactive
+      #   run: eas build --platform ios --profile production --non-interactive
 
       # Build cả hai:
-      #   run: eas build --platform all --non-interactive
+      #   run: eas build --platform all --profile production --non-interactive
 
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: EAS publish
+    # environment: EAS publish # Uncomment if you have set up a GitHub Environment
 
     steps:
       - name: Checkout repository
@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
         run: npm ci --include=dev

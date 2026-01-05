@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./src/assets/icons/app_icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./src/assets/icons/splash-icon.png",
       "resizeMode": "contain",
@@ -29,14 +29,22 @@
     },
     "extra": {
       "eas": {
-        "projectId": "d079c01d-a57a-4434-8d86-bd555dbab6bc"
+        "projectId": "a703c044-9af5-46ed-bf0a-271050cfda85"
       },
       "router": {}
     },
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useLegacyPackaging": true,
+            "newArchEnabled": false
+          }
+        }
+      ],
       [
         "@sentry/react-native/expo",
         {
@@ -44,14 +52,12 @@
           "project": "react-native-mobile-app",
           "organization": "hcmut-nu"
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/d079c01d-a57a-4434-8d86-bd555dbab6bc"
-    },
-    "owner": "quang_chill"
+    "owner": "clearwind"
   }
 }

@@ -7,9 +7,8 @@ export const setAccessToken = (token: string | null) => {
     accessToken = token;
 };
 
-console.log("accessToken", accessToken)
-
-const BASE_URL = 'https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1';
+// const BASE_URL = 'https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1';
+const BASE_URL = 'http://192.168.2.6:8080/api/v1';
 
 const axiosInstance = axios.create({
     baseURL: BASE_URL,
