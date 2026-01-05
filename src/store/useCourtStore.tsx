@@ -1,6 +1,7 @@
 // src/store/useCourtStore.ts
 import { create } from "zustand";
 import { manageCourtService } from "../services/manageCourtService";
+import { PromotionRequest } from "../services/manageCourtService";
 
 export interface Court {
   id?: string; // Thêm id để quản lý list
@@ -18,6 +19,7 @@ export interface Location {
   closeTime: string;
   image: string;
   courts?: Court[]; // Một địa điểm sẽ chứa danh sách sân con
+  promotions?: any[];
 }
 
 // --- 2. ĐỊNH NGHĨA STATE CỦA STORE (Store Interface) ---
@@ -31,7 +33,13 @@ interface CourtStoreState {
   // Actions (Hành động)
   fetchLocations: () => Promise<void>;
   addLocation: (data: Location) => Promise<void>;
+  createPromotion: (data: PromotionRequest) => Promise<void>;
+  getPromotion:(locationId: string) => Promise<void>;
+  deleteLocation: (locationId: string) => Promise<void>;
   fetchCourtByLocation: (locationId: string) => Promise<void>;
+  addCourt: (locationId: string, name: string) => Promise<void>; // Thêm dòng này
+  deleteCourt: (courtId: string) => Promise<void>;
+  updateCourtStatus: (courtId: string, courtStatus: string) => Promise<void>;
   setError: (error: string | null) => void;
 }
 
@@ -50,12 +58,6 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await manageCourtService.getLocation();
-
-      console.log("Data in Store:", response);
-
-      // --- SỬA Ở ĐÂY ---
-      // API trả về: { result:Array, code: 1000, ... }
-      // Nên ta phải lấy response.result
       const list = response.result || [];
 
       set({
@@ -95,12 +97,77 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     }
   },
 
+  createPromotion: async (data: PromotionRequest) => {
+    set({ isLoading: true, error: null });
+    try {
+     const response = await manageCourtService.createPromotion(data);
+
+      set({ isLoading: false });
+    } catch (error: any) {
+      console.error("Create promotion failed:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Tạo khuyến mãi thất bại.",
+      });
+      throw error;
+    }
+  },
+
+  
+  getPromotion: async (locationId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+     const response = await manageCourtService.getPromotion(locationId);
+
+      set({ isLoading: false });
+    } catch (error: any) {
+      console.error("Create promotion failed:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Tạo khuyến mãi thất bại.",
+      });
+      throw error;
+    }
+  },
+
+
+
+  deleteLocation: async (locationId: string) => {
+    // 1. Chỉ bật loading, KHÔNG được xóa locations: [] ở đây
+    set({ isLoading: true, error: null });
+
+    try {
+      // 2. Gọi API xóa
+      await manageCourtService.deleteLocation(locationId);
+
+      // 3. Cập nhật State: Lọc  bỏ cái location vừa xóa khỏi danh sách hiện tại
+      // Cách này giúp UI cập nhật ngay mà không cần gọi lại fetchLocations()
+      set((state) => ({
+        locations: state.locations.filter((item) => item.id !== locationId),
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      console.error("Delete location failed:", error);
+
+      // 4. Nếu lỗi thì tắt loading và hiện thông báo
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Lỗi khi xóa địa điểm.",
+      });
+
+      // Ném lỗi ra để màn hình UI biết mà hiện Alert
+      throw error;
+    }
+  },
+
   fetchCourtByLocation: async (locationId: string) => {
     // Lưu ý: Nhận vào locationId (string) thay vì cả object Location để gọn hơn
     set({ isLoading: true, error: null, currentCourts: [] }); // Reset list cũ trước khi load mới
     try {
       // Gọi service (bạn cần sửa service một chút để nhận ID, xem bước 2)
-      const response = await manageCourtService.getAllCourtByLocationId(locationId);
+      const response = await manageCourtService.getAllCourtByLocationId(
+        locationId
+      );
 
       console.log("Courts data loaded:", response);
 
@@ -115,8 +182,92 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
       console.error("Fetch courts failed:", error);
       set({
         isLoading: false,
-        error: error.response?.data?.message || "Lỗi khi tải danh sách sân con.",
+        error:
+          error.response?.data?.message || "Lỗi khi tải danh sách sân con.",
       });
+    }
+  },
+
+  addCourt: async (locationId: string, name: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const newCourt = await manageCourtService.addCourt(locationId, name);
+
+      // Cập nhật UI ngay lập tức bằng cách thêm vào mảng hiện tại
+      // Lưu ý: Kiểm tra cấu trúc trả về của API addCourt.
+      // Nếu API trả về object sân vừa tạo thì dùng newCourt.
+      // Nếu API trả về wrapper { result: {...} } thì dùng newCourt.result
+
+      const createdItem = newCourt.result || newCourt;
+
+      set((state) => ({
+        currentCourts: [...state.currentCourts, createdItem],
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Thêm sân thất bại.",
+      });
+      throw error;
+    }
+  },
+
+  deleteCourt: async (courtId: string) => {
+    // 1. Chỉ bật loading, KHÔNG được xóa locations: [] ở đây
+    set({ isLoading: true, error: null });
+
+    try {
+      // 2. Gọi API xóa
+      await manageCourtService.deleteCourt(courtId);
+
+      // 3. Cập nhật State: Lọc  bỏ cái location vừa xóa khỏi danh sách hiện tại
+      // Cách này giúp UI cập nhật ngay mà không cần gọi lại fetchLocations()
+      set((state) => ({
+        currentCourts: state.currentCourts.filter(
+          (item) => item.id !== courtId
+        ),
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      console.error("Delete court failed:", error);
+
+      // 4. Nếu lỗi thì tắt loading và hiện thông báo
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Lỗi khi xóa địa điểm.",
+      });
+
+      // Ném lỗi ra để màn hình UI biết mà hiện Alert
+      throw error;
+    }
+  },
+
+  updateCourtStatus: async (courtId: string, newStatus: string) => {
+    // Không cần bật loading toàn màn hình (isLoading: true) để tránh nháy giao diện
+    // Hoặc nếu muốn loading nhẹ thì xử lý riêng. Ở đây mình update ngầm (Optimistic UI)
+
+    try {
+      // 1. Gọi API
+      await manageCourtService.updateCourtStatus(courtId, newStatus);
+
+      // 2. Cập nhật State: Dùng map để sửa status của item tương ứng
+      set((state) => ({
+        currentCourts: state.currentCourts.map((item) =>
+          // Nếu ID trùng thì copy item cũ và đè status mới lên
+          // Lưu ý: ép kiểu toString() để so sánh an toàn
+          item.id.toString() === courtId.toString()
+            ? { ...item, status: newStatus }
+            : item
+        ),
+      }));
+    } catch (error: any) {
+      console.error("Update court failed:", error);
+      // Nếu lỗi thì hiện thông báo, không cần rollback state vì state chưa đổi nếu API lỗi
+      set({
+        error: error.response?.data?.message || "Lỗi khi cập nhật trạng thái.",
+      });
+      throw error;
     }
   },
 

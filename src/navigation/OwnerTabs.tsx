@@ -2,9 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ManagerHomeScreen from '../screens/ManagingCourt/ManagerHomeScreen';
+// import ManagerHomeScreen from '../screens/ManagingCourt/ManagerHomeScreen';
 import RevenueScreen from '../screens/ManagingCourt/RevenueScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
+import ManagerNavigator from './ManagerNavigator';
 
 const NotificationScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -67,7 +68,7 @@ const OwnerTabs = () => {
         },
       })}
     >
-      <Tab.Screen name="Sân của tôi" component={ManagerHomeScreen} />
+      <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
       <Tab.Screen name="Thống kê" component={RevenueScreen} />
       <Tab.Screen name="Thông báo" component={NotificationScreen} />
       <Tab.Screen name="Thông tin" component={UserProfileScreen} />

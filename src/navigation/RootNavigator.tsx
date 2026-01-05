@@ -14,7 +14,6 @@ import OnboardingScreenThird from "../screens/Onboarding/OnboardingScreenThird";
 import PreLogin from "../screens/Onboarding/PreLogin";
 import SignUpScreen from "../screens/Authentication/SignUpScreen";
 import LoginScreen from "../screens/Authentication/LoginScreen";
-import ManagerHomeScreen from "../screens/ManagingCourt/ManagerHomeScreen";
 import RevenueScreen from "../screens/ManagingCourt/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
 import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
@@ -29,7 +28,6 @@ export type RootStackParamList = {
   Home: undefined;
   SignUp: { method: "email" | "phone" };
   Login: undefined;
-  ManagerHome: undefined;
   ManagerRevenue: undefined;
   ClientTabs: undefined;
   OwnerTabs: undefined;
@@ -53,8 +51,6 @@ export default function RootNavigator() {
           userRole === "ROLE_OWNER" ? (
             <>
               <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
-              <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} />
-              <Stack.Screen name="ManagerRevenue" component={RevenueScreen} />
             </>
           ) : (
             <>
