@@ -1,63 +1,86 @@
 import React from 'react';
-import { 
-    View, 
-    Text, 
-    StyleSheet, 
-    TouchableOpacity, 
-    Image, 
-    ScrollView, 
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    ScrollView,
     StatusBar,
     Alert
 } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNotificationStore } from '../../store/useNotificationStore';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+
 
 // --- Component con InfoField (Đã cập nhật logic xử lý Date) ---
 interface InfoFieldProps {
-  label: string;
-  value: string | number | Date | null | undefined;
-  flex?: number;
+    label: string;
+    value: string | number | Date | null | undefined;
+    flex?: number;
 }
 
 const InfoField = ({ label, value, flex }: InfoFieldProps) => {
-  const getDisplayValue = () => {
-    if (value === null || value === undefined) return "";
-    if (value instanceof Date) {
-      return value.toLocaleDateString("vi-VN"); 
-    }
-    return String(value);
-  };
+    const getDisplayValue = () => {
+        if (value === null || value === undefined) return "";
+        if (value instanceof Date) {
+            return value.toLocaleDateString("vi-VN");
+        }
+        return String(value);
+    };
 
-  return (
-    <View style={[styles.inputGroup, flex ? { flex } : undefined]}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputText}>{getDisplayValue()}</Text>
-      </View>
-    </View>
-  );
+    return (
+        <View style={[styles.inputGroup, flex ? { flex } : undefined]}>
+            <Text style={styles.label}>{label}</Text>
+            <View style={styles.inputContainer}>
+                <Text style={styles.inputText}>{getDisplayValue()}</Text>
+            </View>
+        </View>
+    );
 };
 // -----------------------------------------------------------
 
 export default function UserProfileScreen() {
     const { user, logout } = useAuthStore();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const showNotification = useNotificationStore(state => state.showNotification);
 
     const displayUser = {
         name: user?.name || "Jang Wonyoung",
         email: user?.email || "congchuabongbong@gmail.com",
-        avatar: user?.avatar || "https://i.pinimg.com/736x/8f/1c/a6/8f1ca60b37fb571052ba91136b668f4e.jpg", 
+        avatar: user?.avatar || "https://i.pinimg.com/736x/8f/1c/a6/8f1ca60b37fb571052ba91136b668f4e.jpg",
         phone: user?.phone || "080123123123",
         displayPhone: "+84 898889901",
         gender: user?.gender || "Nữ",
         dob: user?.dob || "31/08/2004",
-        bookings: 100, 
-        points: 1250   
+        bookings: 100,
+        points: 1250
     };
 
     const handleLogout = () => {
         Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Đăng xuất", onPress: logout, style: "destructive" }
+            {
+                text: "Đăng xuất",
+                onPress: () => {
+                    logout();
+                    showNotification("Đăng xuất thành công", "success");
+                    // Force navigation to PreLogin or Login
+                    // Wrap in setTimeout to ensure RootNavigator has updated to the unauthenticated stack
+                    // where 'PreLogin' is available.
+                    setTimeout(() => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'PreLogin' }],
+                        });
+                    }, 250);
+                },
+                style: "destructive"
+            }
         ]);
     };
 
@@ -66,7 +89,7 @@ export default function UserProfileScreen() {
             <StatusBar barStyle="light-content" backgroundColor="#42A5F5" />
 
             {/* --- THAY ĐỔI LỚN: Đưa tất cả vào trong ScrollView --- */}
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
                 bounces={false} // Tắt hiệu ứng nảy để header dính chặt trên cùng
@@ -75,12 +98,12 @@ export default function UserProfileScreen() {
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
                         <Image source={{ uri: displayUser.avatar }} style={styles.avatar} />
-                        
+
                         <View style={styles.headerInfo}>
                             <Text style={styles.headerTitle}>Hồ sơ của tôi</Text>
                             <Text style={styles.headerName}>{displayUser.name}</Text>
                             <Text style={styles.headerPhone}>{displayUser.displayPhone}</Text>
-                            
+
                             <View style={styles.vipBadge}>
                                 <Text style={styles.vipText}>Thành viên vip</Text>
                             </View>
@@ -90,7 +113,7 @@ export default function UserProfileScreen() {
 
                 {/* --- BODY CONTENT (Bọc trong View để căn lề 2 bên) --- */}
                 <View style={styles.bodyContent}>
-                    
+
                     {/* --- STATS CARD (Sẽ đè lên Header nhờ marginTop âm) --- */}
                     <View style={styles.statsCard}>
                         {/* Cột 1: Lượt đặt */}
@@ -123,7 +146,7 @@ export default function UserProfileScreen() {
                         <InfoField label="Họ và tên" value={displayUser.name} />
                         <InfoField label="Email" value={displayUser.email} />
                         <InfoField label="Số điện thoại" value={displayUser.phone} />
-                        
+
                         <View style={styles.row}>
                             <InfoField label="Giới tính" value={displayUser.gender} flex={0.45} />
                             <View style={{ width: 15 }} />
@@ -140,7 +163,7 @@ export default function UserProfileScreen() {
                         <Text style={styles.logoutText}>Đăng xuất</Text>
                     </TouchableOpacity>
 
-                </View> 
+                </View>
                 {/* Kết thúc bodyContent */}
 
             </ScrollView>
@@ -162,7 +185,7 @@ const styles = StyleSheet.create({
         paddingTop: 60, // Padding cho Status Bar
         paddingHorizontal: 20,
         // Quan trọng: Để ZIndex thấp hơn card (mặc định trong DOM order là vậy nhưng set cho chắc)
-        zIndex: 1, 
+        zIndex: 1,
     },
     headerContent: {
         flexDirection: "row",
@@ -213,7 +236,7 @@ const styles = StyleSheet.create({
     bodyContent: {
         paddingHorizontal: 20,
     },
-    
+
     // STATS CARD Styles
     statsCard: {
         backgroundColor: "white",
@@ -287,7 +310,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     inputContainer: {
-        backgroundColor: "#E0E0E0", 
+        backgroundColor: "#E0E0E0",
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 15,
@@ -326,7 +349,7 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     logoutText: {
-        color: "#333", 
+        color: "#333",
         fontSize: 16,
         fontWeight: "bold",
     },

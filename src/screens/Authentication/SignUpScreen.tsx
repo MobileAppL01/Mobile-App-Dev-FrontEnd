@@ -25,13 +25,14 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 type SignUpProps = StackScreenProps<RootStackParamList, "SignUp">;
 
 const SignUpScreen = ({ navigation, route }: SignUpProps) => {
-  const { method } = route.params;
+  // const { method } = route.params || {};
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState(""); // Add Phone
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<'PLAYER' | 'OWNER'>('PLAYER');
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -71,7 +72,8 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
         firstName: firstName || "User",
         lastName: lastName || "Name",
         phone: phone,
-        password: password
+        password: password,
+        role: role
       });
 
       showNotification("Đăng ký thành công! Vui lòng đăng nhập.", "success");
@@ -80,15 +82,17 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
     } catch (err: any) {
       let msg = "Đăng ký thất bại. Vui lòng thử lại.";
       if (err.response) {
-        const { status } = err.response;
-        if (status === 400) {
-          msg = "Thông tin không hợp lệ (Email/SĐT sai hoặc thiếu)!";
+        const { data, status } = err.response;
+        if (data?.message) {
+          msg = data.message;
+        } else if (status === 400) {
+          msg = "Thông tin không hợp lệ. Vui lòng kiểm tra lại!";
         } else if (status === 409) {
           msg = "Email hoặc Số điện thoại đã được đăng ký!";
+        } else if (status === 403) {
+          msg = "Bạn không có quyền thực hiện hành động này!";
         } else if (status >= 500) {
           msg = "Lỗi hệ thống (500). Vui lòng thử lại sau.";
-        } else if (err.response.data && typeof err.response.data === 'string') {
-          msg = err.response.data;
         }
       } else if (err.request) {
         msg = "Không thể kết nối đến máy chủ.";
@@ -120,7 +124,23 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
           </View>
 
           <Text style={styles.title}>Đăng Ký</Text>
-          {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
+
+          <View style={styles.roleContainer}>
+            <TouchableOpacity
+              style={[styles.roleButton, role === 'PLAYER' && styles.roleButtonActive]}
+              onPress={() => setRole('PLAYER')}
+            >
+              <Text style={[styles.roleText, role === 'PLAYER' && styles.roleTextActive]}>Người chơi</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.roleButton, role === 'OWNER' && styles.roleButtonActive]}
+              onPress={() => setRole('OWNER')}
+            >
+              <Text style={[styles.roleText, role === 'OWNER' && styles.roleTextActive]}>Chủ sân</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>} - Removed duplicated error display */}
 
           <View style={styles.formContainer}>
 
@@ -259,6 +279,34 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 20,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+    backgroundColor: '#F5F5F5',
+    borderRadius: SIZES.borderRadius,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: COLORS.grayBorder,
+  },
+  roleButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: SIZES.borderRadius - 4,
+    flex: 1,
+    alignItems: 'center',
+  },
+  roleButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  roleText: {
+    color: COLORS.placeholder,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  roleTextActive: {
+    color: COLORS.white,
   },
   // New Styles for Password Eye Icon
   passwordContainer: {

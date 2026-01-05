@@ -88,7 +88,11 @@ export const useAuthStore = create<AuthState>()(
       register: async (registerData) => {
         set({ isLoading: true, error: null });
         try {
-          await authService.registerPlayer(registerData);
+          if (registerData.role === 'OWNER') {
+            await authService.registerOwner(registerData);
+          } else {
+            await authService.registerPlayer(registerData);
+          }
           set({ isLoading: false });
         } catch (error: any) {
           console.error("Register failed:", error);

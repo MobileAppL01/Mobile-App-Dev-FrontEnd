@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Biến cục bộ để lưu token, tránh import Store gây vòng lặp
 let accessToken: string | null = null;
 
 export const setAccessToken = (token: string | null) => {
