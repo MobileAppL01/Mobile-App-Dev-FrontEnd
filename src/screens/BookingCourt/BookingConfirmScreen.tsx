@@ -15,6 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuthStore } from '../../store/useAuthStore';
+
 import { bookingService } from '../../services/bookingService';
 
 const { width } = Dimensions.get('window');
@@ -24,8 +26,12 @@ export default function BookingConfirmScreen() {
     const route = useRoute();
     const { bookingInfo } = (route.params as any) || {};
 
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
+    // Get user from store
+    const user = useAuthStore(state => state.user);
+
+    const [name, setName] = useState(user?.name || '');
+    const [phone, setPhone] = useState(user?.phone || '');
+
     const [note, setNote] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'VNPAY'>('CASH');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -51,6 +57,21 @@ export default function BookingConfirmScreen() {
             return;
         }
 
+        // --- Confirmation Popup ---
+        Alert.alert(
+            "Xác nhận đặt sân",
+            "Bạn có chắc chắn muốn đặt sân không?\nLưu ý: Bạn sẽ không thể hủy sau khi đã xác nhận.",
+            [
+                { text: "Hủy", style: "cancel" },
+                {
+                    text: "Đồng ý",
+                    onPress: processBooking
+                }
+            ]
+        );
+    };
+
+    const processBooking = async () => {
         setIsProcessing(true);
         try {
             const bookingPayload = {
@@ -66,22 +87,28 @@ export default function BookingConfirmScreen() {
 
             if (bookingResult) {
                 if (paymentMethod === 'CASH') {
-                    Alert.alert(
-                        "Đặt sân thành công!",
-                        "Đơn đặt của bạn đã được ghi nhận. Vui lòng đến đúng giờ.",
-                        [{ text: "Về trang chủ", onPress: () => navigation.navigate("ClientTabs") }]
-                    );
-                } else {
-                    // Navigate to QR Screen
+                    // Method: Deposit 50%
+                    const depositAmount = totalPrice * 0.5;
                     navigation.replace("PaymentQR", {
                         booking: bookingResult,
-                        totalPrice,
+                        totalPrice: depositAmount,
                         bankInfo: {
                             bankId: "MB",
                             accountNo: "0335624796",
                             accountName: "NGUYEN DINH PHONG",
-                            content: `THANH TOAN DON ${bookingResult.id}`
+                            content: `COC 50% DON ${bookingResult.id}`
                         }
+                    });
+                } else {
+                    // Method: VNPAY (Active / Full Payment)
+                    // In a real app, 'bookingResult' would contain a 'paymentUrl' from backend.
+                    // Here we simulate it.
+                    const fakeUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?amount=${totalPrice}&orderInfo=Booking_${bookingResult.id}`;
+
+                    navigation.replace("PaymentWebView", {
+                        paymentUrl: "", // Leave empty to trigger mock HTML in WebView screen, or pass fakeUrl if valid
+                        booking: bookingResult,
+                        totalPrice
                     });
                 }
             } else {
@@ -206,21 +233,27 @@ export default function BookingConfirmScreen() {
 
                     {/* Payment Method */}
                     <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
-                    <View style={styles.rowBetween}>
+                    <View style={styles.columnGap}>
                         <TouchableOpacity
                             style={[styles.paymentCard, paymentMethod === 'CASH' && styles.paymentCardActive]}
                             onPress={() => setPaymentMethod('CASH')}
                         >
-                            <MaterialCommunityIcons name="cash" size={24} color={paymentMethod === 'CASH' ? '#3B82F6' : '#6B7280'} />
-                            <Text style={[styles.paymentText, paymentMethod === 'CASH' && styles.paymentTextActive]}>Tiền mặt</Text>
+                            <View style={styles.paymentMethodHeader}>
+                                <MaterialCommunityIcons name="bank-transfer-out" size={24} color={paymentMethod === 'CASH' ? '#3B82F6' : '#6B7280'} />
+                                <Text style={[styles.paymentText, paymentMethod === 'CASH' && styles.paymentTextActive]}>Thanh toán trực tiếp (Cọc 50%)</Text>
+                            </View>
+                            <Text style={styles.paymentSubtext}>Chuyển khoản cọc {(totalPrice * 0.5).toLocaleString('vi-VN')}đ, thanh toán phần còn lại tại sân.</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={[styles.paymentCard, paymentMethod === 'VNPAY' && styles.paymentCardActive]}
                             onPress={() => setPaymentMethod('VNPAY')}
                         >
-                            <MaterialCommunityIcons name="bank-transfer" size={24} color={paymentMethod === 'VNPAY' ? '#3B82F6' : '#6B7280'} />
-                            <Text style={[styles.paymentText, paymentMethod === 'VNPAY' && styles.paymentTextActive]}>Chuyển khoản</Text>
+                            <View style={styles.paymentMethodHeader}>
+                                <MaterialCommunityIcons name="credit-card-outline" size={24} color={paymentMethod === 'VNPAY' ? '#3B82F6' : '#6B7280'} />
+                                <Text style={[styles.paymentText, paymentMethod === 'VNPAY' && styles.paymentTextActive]}>Thanh toán ngân hàng (VNPAY)</Text>
+                            </View>
+                            <Text style={styles.paymentSubtext}>Thanh toán toàn bộ {totalPrice.toLocaleString('vi-VN')}đ qua cổng thanh toán.</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -230,7 +263,7 @@ export default function BookingConfirmScreen() {
             {/* Bottom Bar */}
             <View style={styles.footer}>
                 <View>
-                    <Text style={styles.footerTotalLabel}>Thành tiền (tạm tính)</Text>
+                    <Text style={styles.footerTotalLabel}>Thành tiền</Text>
                     <Text style={styles.footerTotalValue}>{totalPrice.toLocaleString('vi-VN')}đ</Text>
                 </View>
                 <TouchableOpacity
@@ -328,7 +361,7 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         borderStyle: 'dashed',
         borderRadius: 1,
-        backgroundColor: 'white' // Mask
+        backgroundColor: 'white'
     },
     // Inside Ticket
     clubInfoRow: {
@@ -421,33 +454,39 @@ const styles = StyleSheet.create({
         color: '#111827'
     },
     // Payment
-    rowBetween: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    columnGap: {
+        flexDirection: 'column',
         gap: 12
     },
     paymentCard: {
-        flex: 1,
         backgroundColor: 'white',
         padding: 16,
         borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
         borderWidth: 2,
         borderColor: 'transparent',
-        gap: 8
     },
     paymentCardActive: {
         borderColor: '#3B82F6',
         backgroundColor: '#EFF6FF'
     },
+    paymentMethodHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4
+    },
     paymentText: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
-        color: '#6B7280'
+        color: '#374151',
+        marginLeft: 10
     },
     paymentTextActive: {
         color: '#3B82F6'
+    },
+    paymentSubtext: {
+        fontSize: 13,
+        color: '#6B7280',
+        marginLeft: 34 // Align with text above (24 icon + 10 margin)
     },
     // Footer
     footer: {
