@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+package-lock.json
 
 # Expo
 .expo/
@@ -29,6 +30,7 @@ yarn-error.*
 
 # macOS
 .DS_Store
+**/.DS_Store
 *.pem
 
 # Windows
@@ -55,3 +57,13 @@ Desktop.ini
 # generated native folders (managed workflow)
 /ios
 /android
+
+# Build outputs
+coverage/
+out/
+build/
+.vercel/
+
+# Android
+*.apk
+*.aab

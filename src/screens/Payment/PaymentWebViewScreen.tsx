@@ -12,6 +12,12 @@ const PaymentWebViewScreen = () => {
     const { paymentUrl, booking } = (route.params as any) || {};
     const [isLoading, setIsLoading] = useState(true);
 
+    // QR Code generation logic (Unified from PaymentQRScreen)
+    const QR_BASE = "https://img.vietqr.io/image/MB-0335624796-compact2.png";
+    const amount = (route.params as any)?.totalPrice || 0;
+    const content = `Thanh toan don ${booking?.id || '000'}`;
+    const qrUrl = `${QR_BASE}?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=NGUYEN%20DINH%20PHONG`;
+
     // Mock HTML if no real URL provided (for demonstration)
     const mockPaymentHtml = `
       <html>
@@ -20,20 +26,29 @@ const PaymentWebViewScreen = () => {
           <style>
             body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f4f4f4; }
             .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
-            h1 { color: #005BAA; } 
+            h1 { color: #005BAA; margin-bottom: 10px; } 
+            .qr-container { margin: 20px 0; }
+            .qr-img { width: 200px; height: 200px; border: 1px solid #ddd; border-radius: 8px; }
             .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
             .btn-success { background-color: #28a745; }
             .btn-fail { background-color: #dc3545; }
             .info { margin-bottom: 20px; color: #555; }
+            .note { font-size: 12px; color: #888; margin-bottom: 15px; }
           </style>
         </head>
         <body>
           <div class="card">
             <h1>Cổng thanh toán VNPAY</h1>
             <div class="info">
-              <p>Đơn hàng: #${booking?.id || '000'}</p>
-              <p>Số tiền: <strong>${(route.params as any)?.totalPrice?.toLocaleString('vi-VN')} VND</strong></p>
+              <p>Đơn hàng: <strong>#${booking?.id || '000'}</strong></p>
+              <p>Số tiền: <strong>${amount.toLocaleString('vi-VN')} VND</strong></p>
             </div>
+            
+            <div class="qr-container">
+                <img src="${qrUrl}" class="qr-img" alt="Payment QR" />
+                <p class="note">Quét mã để thanh toán nhanh (Mô phỏng)</p>
+            </div>
+
             <p>Vui lòng chọn kết quả thanh toán giả lập:</p>
             <button class="btn btn-success" onclick="window.location.href='http://successtest.com'">Giả lập Thành Công</button>
             <button class="btn btn-fail" onclick="window.location.href='http://failtest.com'">Giả lập Thất Bại</button>

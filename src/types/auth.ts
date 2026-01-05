@@ -16,18 +16,21 @@ export interface AuthResponse {
     token: string;
     type: string;
     id: number;
-    username: string; // This is email in response too usually
+    username: string;
     email: string;
     roles: string[];
+    fullName?: string;
+    phone?: string;
 }
 
 export interface UserData {
-    id: string; // keeping as string for frontend consistency, need to map from number
+    id: string;
     name: string;
+    fullName?: string; // Add this
     email: string;
     role: string;
     avatar?: string;
     phone: string;
-    gender?: string; // Backend might not return this immediately in login response?
+    gender?: string;
     dob?: string;
 }

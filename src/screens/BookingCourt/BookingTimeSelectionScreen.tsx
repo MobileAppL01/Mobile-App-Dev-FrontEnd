@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { courtService } from '../../services/courtService';
 import { bookingService } from '../../services/bookingService';
 
@@ -47,11 +47,19 @@ export default function BookingTimeSelectionScreen() {
         return d;
     }), []);
 
+    // Reload data when screen focuses (to update availability if a booking happened)
+    useFocusEffect(
+        React.useCallback(() => {
+            if (location?.id) {
+                loadData();
+            }
+        }, [location?.id, selectedDate])
+    );
+
+    // Initial load (kept for redundancy or first mount)
     useEffect(() => {
-        if (location?.id) {
-            loadData();
-        }
-    }, [location?.id, selectedDate]);
+        // Handled by useFocusEffect
+    }, []);
 
     // When courts load, auto-select first court if none selected
     useEffect(() => {

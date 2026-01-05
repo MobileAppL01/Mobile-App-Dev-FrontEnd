@@ -31,5 +31,20 @@ export const authService = {
     resetPassword: async (data: any) => {
         const response = await axiosInstance.post('/auth/reset-password', data);
         return response.data;
+    },
+
+    updateProfile: async (data: any) => {
+        const response = await axiosInstance.put('/users/me', data);
+        return response.data;
+    },
+
+    getMyProfile: async () => {
+        const response = await axiosInstance.get('/users/me');
+        return response.data;
+    },
+
+    getProfile: async (userId: number) => {
+        const response = await axiosInstance.get(`/users/${userId}`);
+        return response.data;
     }
 };

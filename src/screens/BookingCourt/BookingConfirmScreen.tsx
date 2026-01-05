@@ -29,7 +29,7 @@ export default function BookingConfirmScreen() {
     // Get user from store
     const user = useAuthStore(state => state.user);
 
-    const [name, setName] = useState(user?.name || '');
+    const [name, setName] = useState(user?.fullName || user?.name || '');
     const [phone, setPhone] = useState(user?.phone || '');
 
     const [note, setNote] = useState('');

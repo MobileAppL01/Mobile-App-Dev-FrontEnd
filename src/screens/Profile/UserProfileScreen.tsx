@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,9 +7,12 @@ import {
     Image,
     ScrollView,
     StatusBar,
-    Alert
+    Alert,
+    TextInput,
+    ActivityIndicator
 } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
+import { authService } from '../../services/authService';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useNavigation } from '@react-navigation/native';
@@ -17,14 +20,17 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 
 
-// --- Component con InfoField (Đã cập nhật logic xử lý Date) ---
+// --- Component con InfoField (Đã cập nhật logic xử lý Date và Edit) ---
 interface InfoFieldProps {
     label: string;
     value: string | number | Date | null | undefined;
     flex?: number;
+    editable?: boolean;
+    onChangeText?: (text: string) => void;
+    keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
 }
 
-const InfoField = ({ label, value, flex }: InfoFieldProps) => {
+const InfoField = ({ label, value, flex, editable, onChangeText, keyboardType = 'default' }: InfoFieldProps) => {
     const getDisplayValue = () => {
         if (value === null || value === undefined) return "";
         if (value instanceof Date) {
@@ -36,8 +42,17 @@ const InfoField = ({ label, value, flex }: InfoFieldProps) => {
     return (
         <View style={[styles.inputGroup, flex ? { flex } : undefined]}>
             <Text style={styles.label}>{label}</Text>
-            <View style={styles.inputContainer}>
-                <Text style={styles.inputText}>{getDisplayValue()}</Text>
+            <View style={[styles.inputContainer, editable && styles.inputEditable]}>
+                {editable ? (
+                    <TextInput
+                        style={[styles.inputText, { padding: 0 }]} // Reset padding for TextInput inside View
+                        value={getDisplayValue()}
+                        onChangeText={onChangeText}
+                        keyboardType={keyboardType}
+                    />
+                ) : (
+                    <Text style={styles.inputText}>{getDisplayValue()}</Text>
+                )}
             </View>
         </View>
     );
@@ -45,20 +60,96 @@ const InfoField = ({ label, value, flex }: InfoFieldProps) => {
 // -----------------------------------------------------------
 
 export default function UserProfileScreen() {
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateUser } = useAuthStore();
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const showNotification = useNotificationStore(state => state.showNotification);
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        fullName: "",
+        email: "",
+        phone: ""
+    });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                fullName: user.fullName || user.name || "",
+                email: user.email || "",
+                phone: user.phone || ""
+            });
+        }
+    }, [user]);
+
     const displayUser = {
-        name: user?.name || "Jang Wonyoung",
-        email: user?.email || "congchuabongbong@gmail.com",
-        avatar: user?.avatar || "https://i.pinimg.com/736x/8f/1c/a6/8f1ca60b37fb571052ba91136b668f4e.jpg",
-        phone: user?.phone || "080123123123",
-        displayPhone: "+84 898889901",
-        gender: user?.gender || "Nữ",
-        dob: user?.dob || "31/08/2004",
-        bookings: 100,
-        points: 1250
+        name: user?.fullName || user?.name || "Người dùng",
+        email: user?.email || "",
+        avatar: user?.avatar || "https://i.pravatar.cc/300",
+        phone: user?.phone || "",
+        gender: "Nam",
+        dob: "01/01/2000",
+        bookings: 0,
+        points: 0
+    };
+
+    const handleSave = async () => {
+        if (!formData.fullName.trim()) {
+            Alert.alert("Lỗi", "Tên không được để trống");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            // Split Full Name into firstName and lastName logic (Basic)
+            const parts = formData.fullName.trim().split(" ");
+            let firstName = "";
+            let lastName = "";
+
+            if (parts.length === 1) {
+                firstName = parts[0];
+            } else if (parts.length > 1) {
+                firstName = parts[0];
+                lastName = parts.slice(1).join(" ");
+            }
+
+            const updatePayload = {
+                firstName: firstName,
+                lastName: lastName,
+                email: formData.email,
+                phone: formData.phone
+            };
+
+            await authService.updateProfile(updatePayload);
+
+            // Update local store
+            updateUser({
+                fullName: formData.fullName,
+                phone: formData.phone,
+                email: formData.email
+            });
+
+            showNotification("Cập nhật hồ sơ thành công", "success");
+            setIsEditing(false);
+
+        } catch (error: any) {
+            console.error(error);
+            Alert.alert("Lỗi", error.response?.data?.message || "Không thể cập nhật hồ sơ");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        // Reset form
+        if (user) {
+            setFormData({
+                fullName: user.fullName || user.name || "",
+                email: user.email || "",
+                phone: user.phone || ""
+            });
+        }
+        setIsEditing(false);
     };
 
     const handleLogout = () => {
@@ -69,9 +160,6 @@ export default function UserProfileScreen() {
                 onPress: () => {
                     logout();
                     showNotification("Đăng xuất thành công", "success");
-                    // Force navigation to PreLogin or Login
-                    // Wrap in setTimeout to ensure RootNavigator has updated to the unauthenticated stack
-                    // where 'PreLogin' is available.
                     setTimeout(() => {
                         navigation.reset({
                             index: 0,
@@ -88,13 +176,12 @@ export default function UserProfileScreen() {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#42A5F5" />
 
-            {/* --- THAY ĐỔI LỚN: Đưa tất cả vào trong ScrollView --- */}
             <ScrollView
                 contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
-                bounces={false} // Tắt hiệu ứng nảy để header dính chặt trên cùng
+                bounces={false}
             >
-                {/* --- HEADER (Giờ nằm trong ScrollView) --- */}
+                {/* --- HEADER --- */}
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
                         <Image source={{ uri: displayUser.avatar }} style={styles.avatar} />
@@ -102,8 +189,7 @@ export default function UserProfileScreen() {
                         <View style={styles.headerInfo}>
                             <Text style={styles.headerTitle}>Hồ sơ của tôi</Text>
                             <Text style={styles.headerName}>{displayUser.name}</Text>
-                            <Text style={styles.headerPhone}>{displayUser.displayPhone}</Text>
-
+                            {/* Phone removed as per previous user edit */}
                             <View style={styles.vipBadge}>
                                 <Text style={styles.vipText}>Thành viên vip</Text>
                             </View>
@@ -111,12 +197,11 @@ export default function UserProfileScreen() {
                     </View>
                 </View>
 
-                {/* --- BODY CONTENT (Bọc trong View để căn lề 2 bên) --- */}
+                {/* --- BODY CONTENT --- */}
                 <View style={styles.bodyContent}>
 
-                    {/* --- STATS CARD (Sẽ đè lên Header nhờ marginTop âm) --- */}
+                    {/* --- STATS CARD --- */}
                     <View style={styles.statsCard}>
-                        {/* Cột 1: Lượt đặt */}
                         <View style={styles.statItem}>
                             <View style={[styles.iconCircle, { backgroundColor: "#E3F2FD" }]}>
                                 <Ionicons name="trophy" size={24} color="#2196F3" />
@@ -129,7 +214,6 @@ export default function UserProfileScreen() {
 
                         <View style={styles.divider} />
 
-                        {/* Cột 2: Điểm */}
                         <View style={styles.statItem}>
                             <View style={[styles.iconCircle, { backgroundColor: "#FFF3E0" }]}>
                                 <MaterialCommunityIcons name="medal-outline" size={24} color="#FF9800" />
@@ -143,9 +227,26 @@ export default function UserProfileScreen() {
 
                     {/* --- FORM INFO --- */}
                     <View style={styles.formCard}>
-                        <InfoField label="Họ và tên" value={displayUser.name} />
-                        <InfoField label="Email" value={displayUser.email} />
-                        <InfoField label="Số điện thoại" value={displayUser.phone} />
+                        <InfoField
+                            label="Họ và tên"
+                            value={isEditing ? formData.fullName : displayUser.name}
+                            editable={isEditing}
+                            onChangeText={(text) => setFormData({ ...formData, fullName: text })}
+                        />
+                        <InfoField
+                            label="Email"
+                            value={isEditing ? formData.email : displayUser.email}
+                            editable={isEditing}
+                            onChangeText={(text) => setFormData({ ...formData, email: text })}
+                            keyboardType="email-address"
+                        />
+                        <InfoField
+                            label="Số điện thoại"
+                            value={isEditing ? formData.phone : displayUser.phone}
+                            editable={isEditing}
+                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                            keyboardType="phone-pad"
+                        />
 
                         <View style={styles.row}>
                             <InfoField label="Giới tính" value={displayUser.gender} flex={0.45} />
@@ -155,17 +256,43 @@ export default function UserProfileScreen() {
                     </View>
 
                     {/* --- ACTIONS --- */}
-                    <TouchableOpacity style={styles.saveButton} activeOpacity={0.8}>
-                        <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
-                    </TouchableOpacity>
+                    {isEditing ? (
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.cancelButton]}
+                                onPress={handleCancel}
+                                disabled={isLoading}
+                            >
+                                <Text style={styles.cancelButtonText}>Hủy</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.saveButton]}
+                                onPress={handleSave}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>Lưu</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => setIsEditing(true)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.editButtonText}>Chỉnh sửa thông tin</Text>
+                        </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
                         <Text style={styles.logoutText}>Đăng xuất</Text>
                     </TouchableOpacity>
 
                 </View>
-                {/* Kết thúc bodyContent */}
-
             </ScrollView>
         </View>
     );
@@ -179,12 +306,11 @@ const styles = StyleSheet.create({
     // HEADER Styles
     header: {
         backgroundColor: "#42A5F5",
-        height: 200, // Tăng chiều cao một chút để chứa đủ nội dung
+        height: 200,
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
-        paddingTop: 60, // Padding cho Status Bar
+        paddingTop: 60,
         paddingHorizontal: 20,
-        // Quan trọng: Để ZIndex thấp hơn card (mặc định trong DOM order là vậy nhưng set cho chắc)
         zIndex: 1,
     },
     headerContent: {
@@ -213,15 +339,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600'
     },
-    headerPhone: {
-        color: "rgba(255,255,255,0.8)",
-        fontSize: 14,
-        marginBottom: 6,
-    },
     vipBadge: {
         backgroundColor: "rgba(255,255,255,0.2)",
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingHorizontal: 8,
         borderRadius: 15,
         alignSelf: "flex-start",
     },
@@ -232,7 +352,6 @@ const styles = StyleSheet.create({
     },
 
     // BODY Styles
-    // Container bao bọc phần dưới để tạo padding 2 bên
     bodyContent: {
         paddingHorizontal: 20,
     },
@@ -242,7 +361,7 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 20,
         padding: 15,
-        marginTop: -40, // --- KEY: Kỹ thuật Margin âm hoạt động tốt khi nằm cùng ScrollView ---
+        marginTop: -40,
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
@@ -250,9 +369,9 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 10,
-        elevation: 5, // Android shadow
-        marginBottom: 20,
-        zIndex: 10, // Đảm bảo nổi lên trên header
+        elevation: 5,
+        marginBottom: 24,
+        zIndex: 10,
     },
     statItem: {
         flexDirection: "row",
@@ -289,7 +408,7 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 20,
         padding: 20,
-        marginBottom: 25,
+        marginBottom: 30,
         elevation: 2,
         shadowColor: "#000",
         shadowOpacity: 0.05,
@@ -297,7 +416,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
     },
     inputGroup: {
-        marginBottom: 15,
+        marginBottom: 20,
     },
     row: {
         flexDirection: "row",
@@ -315,6 +434,11 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 15,
     },
+    inputEditable: {
+        backgroundColor: "white",
+        borderWidth: 1,
+        borderColor: "#ddd",
+    },
     inputText: {
         color: "#333",
         fontSize: 15,
@@ -322,34 +446,68 @@ const styles = StyleSheet.create({
     },
 
     // BUTTONS Styles
-    saveButton: {
+    editButton: {
         backgroundColor: "#64B5F6",
         paddingVertical: 15,
         borderRadius: 30,
         alignItems: "center",
-        marginBottom: 15,
+        marginBottom: 20,
         shadowColor: "#64B5F6",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 4,
     },
+    editButtonText: {
+        color: "white",
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        gap: 15
+    },
+    actionButton: {
+        flex: 1,
+        paddingVertical: 15,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 2,
+    },
+    saveButton: {
+        backgroundColor: "#64B5F6",
+    },
     saveButtonText: {
         color: "white",
         fontSize: 16,
         fontWeight: "bold",
     },
+    cancelButton: {
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "#ddd",
+    },
+    cancelButtonText: {
+        color: "#666",
+        fontSize: 16,
+        fontWeight: "600"
+    },
+
     logoutButton: {
         backgroundColor: "white",
         paddingVertical: 15,
         borderRadius: 30,
         alignItems: "center",
         borderWidth: 1,
-        borderColor: "#333",
+        borderColor: "#FF5252", // Red for danger/logout
         marginBottom: 30,
     },
     logoutText: {
-        color: "#333",
+        color: "#FF5252",
         fontSize: 16,
         fontWeight: "bold",
     },

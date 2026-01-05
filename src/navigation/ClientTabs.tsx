@@ -1,24 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useInboxStore } from '../store/useInboxStore';
 
 // Import Screens
 import HomeScreen from '../screens/BookingCourt/HomeScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import BookingHistoryScreen from '../screens/BookingHistory/BookingHistory';
-
-// --- Placeholder Screens ---
-const NotificationScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Thông Báo</Text>
-  </View>
-);
-
+import NotificationScreen from '../screens/Notification/NotificationScreen';
 
 const Tab = createBottomTabNavigator();
 
 const ClientTabs = () => {
+  const unreadCount = useInboxStore(state => state.unreadCount);
+  const fetchNotifications = useInboxStore(state => state.fetchNotifications);
+
+  useEffect(() => {
+    fetchNotifications();
+    // Optional: Polling every minute?
+    // const interval = setInterval(fetchNotifications, 60000);
+    // return () => clearInterval(interval);
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -59,7 +63,14 @@ const ClientTabs = () => {
       })}
     >
       <Tab.Screen name="Trang Chủ" component={HomeScreen} />
-      <Tab.Screen name="Thông Báo" component={NotificationScreen} />
+      <Tab.Screen
+        name="Thông Báo"
+        component={NotificationScreen}
+        options={{
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#EF4444', fontSize: 10, minWidth: 16, height: 16 }
+        }}
+      />
       <Tab.Screen name="Lịch Sử" component={BookingHistoryScreen} />
       <Tab.Screen name="Thông Tin" component={UserProfileScreen} />
     </Tab.Navigator>

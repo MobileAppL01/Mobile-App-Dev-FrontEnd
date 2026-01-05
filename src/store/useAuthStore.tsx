@@ -1,21 +1,9 @@
-// src/store/useAuthStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from "../services/authService";
-import { LoginRequest, RegisterRequest } from "../types/auth";
+import { LoginRequest, RegisterRequest, UserData } from "../types/auth"; // Import UserData
 import { setAccessToken } from "../services/axiosInstance";
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  phone?: string;
-  gender?: string;
-  dob?: string;
-}
 
 interface AuthState {
   hasSeenOnboarding: boolean;
@@ -57,15 +45,16 @@ export const useAuthStore = create<AuthState>()(
 
           const userData: UserData = {
             id: response.id.toString(),
-            name: response.username || response.email,
+            name: response.fullName || response.username || response.email,
+            fullName: response.fullName || response.username, // Explicitly map fullName
             email: response.email,
             role: userRole,
-            phone: "",
+            phone: response.phone || "",
             avatar: "https://i.pravatar.cc/300",
           };
 
-          
-         console.log("access token at store", response.token);
+
+          console.log("access token at store", response.token);
           setAccessToken(response.token);
 
           set({
