@@ -107,10 +107,10 @@ const LoginScreen = ({ navigation }: LoginProps) => {
             {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
 
             <View style={styles.inputGroup}>
-              <Text style={COMMON_STYLES.label}>Tên đăng nhập</Text>
+              <Text style={COMMON_STYLES.label}>Địa chỉ email</Text>
               <TextInput
                 style={COMMON_STYLES.input}
-                placeholder="09xxx/example@gmail.com"
+                placeholder="example@gmail.com"
                 placeholderTextColor={COLORS.placeholder}
                 value={email}
                 onChangeText={setEmail}
@@ -131,7 +131,10 @@ const LoginScreen = ({ navigation }: LoginProps) => {
               />
             </View>
 
-            <TouchableOpacity style={styles.forgotPasswordContainer}>
+            <TouchableOpacity
+              style={styles.forgotPasswordContainer}
+              onPress={() => navigation.navigate("ForgotPassword")}
+            >
               <Text style={COMMON_STYLES.linkText}>Quên mật khẩu</Text>
             </TouchableOpacity>
 

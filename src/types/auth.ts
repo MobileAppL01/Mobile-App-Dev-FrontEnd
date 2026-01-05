@@ -9,8 +9,7 @@ export interface RegisterRequest {
     email: string;
     password: string;
     phone: string;
-    // Backend creates with role PLAYER by default for this endpoint usually, 
-    // or we might need separate endpoints for OWNER if needed.
+    role?: 'PLAYER' | 'OWNER';
 }
 
 export interface AuthResponse {

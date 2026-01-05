@@ -21,6 +21,8 @@ import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
 import BookingTimeSelectionScreen from '../screens/BookingCourt/BookingTimeSelectionScreen';
 import BookingConfirmScreen from '../screens/BookingCourt/BookingConfirmScreen';
 import PaymentQRScreen from '../screens/Payment/PaymentQRScreen';
+import ForgotPasswordScreen from "../screens/Authentication/ForgotPasswordScreen";
+import ResetPasswordScreen from "../screens/Authentication/ResetPasswordScreen";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -29,7 +31,9 @@ export type RootStackParamList = {
   OnboardingThird: undefined;
   PreLogin: undefined;
   Login: undefined;
-  SignUp: undefined;
+  SignUp: { method?: string } | undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
   ManagerHome: undefined;
   ManagerRevenue: undefined;
   ClientTabs: undefined;
@@ -75,12 +79,17 @@ export default function RootNavigator() {
                 <Stack.Screen name="OnboardingFirst" component={OnboardingScreenFirst} />
                 <Stack.Screen name="OnboardingSecond" component={OnboardingScreenSecond} />
                 <Stack.Screen name="OnboardingThird" component={OnboardingScreenThird} />
+                {/* Show custom splash only during onboarding flow if needed, or make it the very first if !hasSeenOnboarding */}
+                <Stack.Screen name="Splash" component={SplashScreen} />
               </>
             )}
-            <Stack.Screen name="Splash" component={SplashScreen} />
+            {/* If hasSeenOnboarding is true, we go directly to PreLogin */}
             <Stack.Screen name="PreLogin" component={PreLogin} />
+            {hasSeenOnboarding && <Stack.Screen name="Splash" component={SplashScreen} />}
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
 
             {/* Guest Access */}
             <Stack.Screen name="ClientTabs" component={ClientTabs} />

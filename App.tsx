@@ -15,6 +15,7 @@ Sentry.init({
 });
 
 import NotificationToast from './src/components/NotificationToast';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function App() {
   const token = useAuthStore(state => state.token);
@@ -24,10 +25,10 @@ function App() {
   }, [token]);
 
   return (
-    <>
+    <SafeAreaProvider>
       <RootNavigator />
       <NotificationToast />
-    </>
+    </SafeAreaProvider>
   );
 }
 
