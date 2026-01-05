@@ -37,13 +37,23 @@
       "expo-font",
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "useLegacyPackaging": true,
+            "newArchEnabled": false
+          }
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
           "project": "react-native-mobile-app",
           "organization": "hcmut-nu"
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
