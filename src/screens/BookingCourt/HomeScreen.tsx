@@ -18,7 +18,7 @@ import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
 import { locationService } from '../../services/locationService';
 import { LocationDTO } from '../../types/location';
-
+import { Header } from '../../components/Header';
 const { width, height } = Dimensions.get('window');
 
 export interface Court {

@@ -30,12 +30,8 @@ export type RootStackParamList = {
   PreLogin: undefined;
   Login: undefined;
   ManagerRevenue: undefined;
-  ClientTabs: undefined;
   OwnerTabs: undefined;
-  CourtDetail: { court: any };
-  ReviewScreen: undefined;
   SignUp: undefined;
-  ManagerRevenue: undefined;
   ClientTabs: undefined;
   CourtDetail: { location: any };
   ReviewScreen: { locationId: string };
