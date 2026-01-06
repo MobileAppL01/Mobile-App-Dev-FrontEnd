@@ -48,7 +48,7 @@ const LoginScreen = ({ navigation }: LoginProps) => {
       return;
     }
     try {
-      await login({ username: email, password });
+      await login({ email, password });
       showNotification("Đăng nhập thành công!", "success");
     } catch (err: any) {
       let msg = "Đăng nhập thất bại. Vui lòng thử lại.";

@@ -85,7 +85,7 @@ const ManagerLocationsScreen = () => {
         onPress: async () => {
           try {
             await deleteLocation(item.id);
-          } catch (e) {}
+          } catch (e) { }
         },
       },
     ]);
@@ -125,6 +125,12 @@ const ManagerLocationsScreen = () => {
   // Hàm chuyển trang
   const handleNavigateDetail = (item: any) => {
     navigation.navigate("ManagerCourts", { cluster: item });
+  };
+
+  // Hàm xem đánh giá
+  const handleViewReviews = (item: any) => {
+    // Navigate is typed with StackParamList so it should work if OwnerReviewManager is in it
+    (navigation as any).navigate('OwnerReviewManager', { locationId: item.id, locationName: item.name });
   };
 
   return (
@@ -174,6 +180,7 @@ const ManagerLocationsScreen = () => {
               onDelete={confirmDelete}
               onOpenPromo={handleOpenPromo}
               refreshTrigger={updateSignal}
+              onViewReviews={handleViewReviews}
             />
           )}
           ListEmptyComponent={

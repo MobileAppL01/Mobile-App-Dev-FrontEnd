@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
-import { 
-    View, 
-    Text, 
-    StyleSheet, 
-    TouchableOpacity, 
-    FlatList, 
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    FlatList,
     StatusBar,
-    SafeAreaView
+    SafeAreaView,
+    RefreshControl
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 
 export default function BookingHistoryScreen() {
     // State để quản lý tab đang chọn: 'upcoming' (Lịch hẹn) hoặc 'history' (Đã đặt)
     const [activeTab, setActiveTab] = useState('upcoming');
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        // Simulate data fetching
+        setTimeout(() => {
+            setRefreshing(false);
+        }, 2000);
+    }, []);
 
     // Dữ liệu mẫu cho Lịch hẹn (Sắp tới)
     const upcomingBookings = [
@@ -87,7 +97,7 @@ export default function BookingHistoryScreen() {
                 <View style={styles.iconContainer}>
                     <Ionicons name="location-sharp" size={24} color="#000" />
                 </View>
-                
+
                 <View style={styles.headerTextContainer}>
                     <Text style={styles.placeName} numberOfLines={1}>
                         {item.placeName}
@@ -137,7 +147,7 @@ export default function BookingHistoryScreen() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#42A5F5" />
-            
+
             {/* --- HEADER --- */}
             <View style={styles.headerContainer}>
                 <Text style={styles.headerTitle}>Lịch sử đặt sân</Text>
@@ -147,7 +157,7 @@ export default function BookingHistoryScreen() {
             {/* --- TAB SWITCHER --- */}
             <View style={styles.tabContainer}>
                 <View style={styles.tabWrapper}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'upcoming' && styles.activeTab]}
                         onPress={() => setActiveTab('upcoming')}
                         activeOpacity={0.8}
@@ -157,7 +167,7 @@ export default function BookingHistoryScreen() {
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'history' && styles.activeTab]}
                         onPress={() => setActiveTab('history')}
                         activeOpacity={0.8}
@@ -176,6 +186,9 @@ export default function BookingHistoryScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
                 // Hiển thị khi danh sách trống
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
@@ -325,7 +338,7 @@ const styles = StyleSheet.create({
         color: '#333',
         fontWeight: '500',
     },
-    
+
     // --- Empty State ---
     emptyContainer: {
         alignItems: 'center',

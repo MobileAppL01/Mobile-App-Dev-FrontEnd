@@ -89,39 +89,39 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
     );
 };
 
-const NotificationScreen = () => {
+const OwnerNotificationScreen = () => {
     const navigation = useNavigation();
-    const { notifications, unreadCount, isLoading, fetchNotifications, markRead, markAllRead, deleteNotification, deleteAllNotifications } = useInboxStore();
+    const { notifications, unreadCount, isLoading, fetchOwnerNotifications, markRead, markAllRead, deleteNotification, deleteAllNotifications } = useInboxStore();
 
     useEffect(() => {
-        fetchNotifications();
+        fetchOwnerNotifications();
     }, []);
 
     const handlePressItem = (item: NotificationItemType) => {
         if (!item.isRead) {
             markRead(item.id);
         }
-        // Navigate if needed
+        // Navigate if needed, e.g., to Booking Detail
     };
 
     const handleDelete = (id: string) => {
         Alert.alert("Xóa thông báo", "Bạn có chắc muốn xóa thông báo này?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa", style: 'destructive', onPress: () => deleteNotification(id, false) }
+            { text: "Xóa", style: 'destructive', onPress: () => deleteNotification(id, true) }
         ]);
     };
 
     const handleDeleteAll = () => {
         Alert.alert("Xóa tất cả", "Bạn có chắc muốn xóa tất cả thông báo?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa tất cả", style: 'destructive', onPress: () => deleteAllNotifications(false) }
+            { text: "Xóa tất cả", style: 'destructive', onPress: () => deleteAllNotifications(true) }
         ]);
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Thông báo</Text>
+                <Text style={styles.headerTitle}>Thông báo (Chủ sân)</Text>
                 {notifications.length > 0 && (
                     <TouchableOpacity onPress={handleDeleteAll} style={styles.readAllBtn}>
                         <Ionicons name="trash-outline" size={20} color={COLORS.error} />
@@ -138,7 +138,7 @@ const NotificationScreen = () => {
                 )}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={fetchNotifications} colors={[COLORS.primary]} />
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchOwnerNotifications} colors={[COLORS.primary]} />
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
@@ -265,4 +265,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default NotificationScreen;
+export default OwnerNotificationScreen;

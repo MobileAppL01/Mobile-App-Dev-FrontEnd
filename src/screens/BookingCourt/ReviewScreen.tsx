@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -10,13 +10,19 @@ import {
     ScrollView,
     LayoutAnimation,
     Platform,
-    UIManager
+    UIManager,
+    ActivityIndicator,
+    Alert,
+    Animated
 } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { reviewService, UIReview, ReviewStats, UIReply } from '../../services/reviewService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuthStore } from '../../store/useAuthStore';
+import { Swipeable } from 'react-native-gesture-handler';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -24,147 +30,56 @@ if (Platform.OS === 'android') {
     }
 }
 
-// --- TYPE INTERFACES ---
-interface Reply {
-    id: string;
-    user: { name: string; avatar: string; isOwner?: boolean };
-    date: string;
-    comment: string;
-    likes: number;
-    isLiked: boolean;
-}
-
-interface Review {
-    id: string;
-    user: { name: string; avatar: string };
-    rating: number;
-    date: string;
-    comment: string;
-    images: string[];
-    likes: number;
-    isLiked: boolean;
-    replies: Reply[];
-    showReplies?: boolean;
-}
-
-// --- MOCK DATA ---
-const INITIAL_REVIEWS: Review[] = [
-    {
-        id: '1',
-        user: { name: 'Phạm Thanh Phong', avatar: 'https://i.pravatar.cc/150?u=99' },
-        rating: 5,
-        date: '20:42 31/10/2025',
-        comment: 'Mặt sân sạch sẽ chất lượng, đèn không chói như các sân khác',
-        images: [],
-        likes: 1,
-        isLiked: true,
-        replies: [
-            {
-                id: '101',
-                user: { name: 'Hoàng Văn Mạnh', avatar: 'https://i.pravatar.cc/150?u=admin', isOwner: true },
-                date: '21:03 31/10/2025',
-                comment: 'Cảm ơn bạn đã ủng hộ sân ^^',
-                likes: 1,
-                isLiked: false
-            },
-            {
-                id: '102',
-                user: { name: 'Phạm Thanh Phong', avatar: 'https://i.pravatar.cc/150?u=99' },
-                date: '21:12 31/10/2025',
-                comment: 'Không có gì ạ',
-                likes: 1,
-                isLiked: true
-            }
-        ],
-        showReplies: true
-    },
-    {
-        id: '2',
-        user: { name: 'Đặng Văn Ba', avatar: 'https://i.pravatar.cc/150?u=1' },
-        rating: 4,
-        date: '10:55 29/10/2025',
-        comment: 'Sân đẹp',
-        images: [
-            'https://picsum.photos/200/300?random=1',
-            'https://picsum.photos/200/300?random=2',
-            'https://picsum.photos/200/300?random=3'
-        ],
-        likes: 12,
-        isLiked: false,
-        replies: [],
-        showReplies: false
-    },
-    {
-        id: '3',
-        user: { name: 'Lê Thị Thìn', avatar: 'https://i.pravatar.cc/150?u=2' },
-        rating: 5,
-        date: '21:32 27/10/2025',
-        comment: 'Sân chất lượng tốt, sẽ còn quay lại ủng hộ!',
-        images: [],
-        likes: 12,
-        isLiked: true,
-        replies: [],
-        showReplies: false
-    },
-    {
-        id: '4',
-        user: { name: 'Nguyễn Hoàng Nam', avatar: 'https://i.pravatar.cc/150?u=3' },
-        rating: 5,
-        date: '22:14 23/10/2025',
-        comment: 'Lần đầu đi đánh cầu lông gặp sân này rất ổn, thoáng mát rộng rãi, đầy đủ tiện nghi',
-        images: [],
-        likes: 12,
-        isLiked: false,
-        replies: [],
-        showReplies: false
-    },
-    {
-        id: '5',
-        user: { name: 'Phạm Quốc Việt', avatar: 'https://i.pravatar.cc/150?u=4' },
-        rating: 5,
-        date: '21:53 19/10/2025',
-        comment: 'Sân này mát mẻ, chỗ để xe rộng rãi, nói chung khá tốt',
-        images: [],
-        likes: 12,
-        isLiked: false,
-        replies: [],
-        showReplies: false
-    },
-    {
-        id: '6',
-        user: { name: 'Lê Công Vinh', avatar: 'https://i.pravatar.cc/150?u=5' },
-        rating: 5,
-        date: '17:26 15/10/2025',
-        comment: 'Tuyệt vời, sân sạch sẽ, mát mẻ',
-        images: [],
-        likes: 0,
-        isLiked: false,
-        replies: [],
-        showReplies: false
-    }
-];
-
-const RATING_STATS = {
-    average: 4.8,
-    total: 100,
-    counts: { 5: 86, 4: 8, 3: 4, 2: 2, 1: 0 }
-};
-
 export default function ReviewScreen() {
     const navigation = useNavigation();
+    const route = useRoute();
+    const { locationId } = (route.params as any) || {};
+    const { user } = useAuthStore();
     const { showNotification } = useNotificationStore();
-    const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
+
+    // Data State
+    const [reviews, setReviews] = useState<UIReview[]>([]);
+    const [stats, setStats] = useState<ReviewStats>({ averageRating: 0, totalReviews: 0, counts: {} } as any);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('Đề xuất');
 
-    // Modal & Post Logic
+    // Modal State
     const [modalVisible, setModalVisible] = useState(false);
+
+    // Form State
     const [myRating, setMyRating] = useState(0);
     const [myComment, setMyComment] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
-    // Options Modal State
-    const [optionsModalVisible, setOptionsModalVisible] = useState(false);
-    const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+    // Edit/Reply Context
+    const [editTarget, setEditTarget] = useState<{ type: 'REVIEW' | 'COMMENT', id: string } | null>(null);
+    const [replyTarget, setReplyTarget] = useState<{ reviewId: string, parentCommentId?: string } | null>(null);
+
+    // Refs for Swipeables to close them
+    const swipeableRefs = useRef(new Map()).current;
+
+    useEffect(() => {
+        loadData();
+    }, [locationId]);
+
+    const loadData = async () => {
+        if (!locationId) return;
+        setLoading(true);
+        try {
+            const [fetchedReviews, fetchedStats] = await Promise.all([
+                reviewService.getLocationReviews(locationId),
+                reviewService.getLocationStats(locationId)
+            ]);
+            const sortedReviews = fetchedReviews.sort((a, b) => Number(b.id) - Number(a.id));
+            setReviews(sortedReviews);
+            setStats(fetchedStats);
+        } catch (error) {
+            console.error(error);
+            showNotification("Có lỗi khi tải đánh giá", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -181,6 +96,7 @@ export default function ReviewScreen() {
     };
 
     const handleVote = (id: string, isReply = false) => {
+        // Optimistic UI update
         const updateLike = (item: any) => {
             if (item.isLiked) {
                 return { ...item, likes: item.likes - 1, isLiked: false };
@@ -210,54 +126,257 @@ export default function ReviewScreen() {
         setReviews(reviews.map(r => r.id === id ? { ...r, showReplies: !r.showReplies } : r));
     }
 
-    const handleSubmitReview = () => {
-        if (myRating === 0) {
-            showNotification("Vui lòng chọn số sao đánh giá!", "error");
-            return;
-        }
+    // --- Action Handlers ---
 
-        const newReview: Review = {
-            id: Date.now().toString(),
-            user: { name: 'Phạm Thanh Phong', avatar: 'https://i.pravatar.cc/150?u=99' },
-            rating: myRating,
-            date: 'Vừa xong',
-            comment: myComment,
-            images: selectedImages,
-            likes: 0,
-            isLiked: false,
-            replies: [],
-            showReplies: false
-        };
-
-        setReviews([newReview, ...reviews]);
-        setModalVisible(false);
+    const openCreateReview = () => {
         setMyRating(0);
         setMyComment('');
         setSelectedImages([]);
-        showNotification("Đã gửi đánh giá thành công!", "success");
+        setEditTarget(null);
+        setReplyTarget(null);
+        setModalVisible(true);
     };
 
-    const handleOptionsPress = (reviewData: Review) => {
-        // Only show options if it's the current user's review
-        // In a real app, check user ID. Here we mock check by name.
-        if (reviewData.user.name === 'Phạm Thanh Phong') {
-            setSelectedReviewId(reviewData.id);
-            setOptionsModalVisible(true);
+    const openReply = (reviewId: string, parentCommentId?: string) => {
+        setMyRating(0); // Rating irrelevant for reply
+        setMyComment('');
+        setSelectedImages([]);
+        setEditTarget(null);
+        setReplyTarget({ reviewId, parentCommentId });
+        setModalVisible(true);
+    };
+
+    const openEdit = (type: 'REVIEW' | 'COMMENT', item: UIReview | UIReply, existingRating: number = 0) => {
+        setMyRating(existingRating);
+        setMyComment(item.comment);
+        // Images: item.images if Review.
+        setSelectedImages((item as any).images || []);
+        setEditTarget({ type, id: item.id });
+        setReplyTarget(null);
+        setModalVisible(true);
+    };
+
+    const handleDelete = (type: 'REVIEW' | 'COMMENT', id: string) => {
+        Alert.alert(
+            "Xác nhận xóa",
+            `Bạn có chắc muốn xóa ${type === 'REVIEW' ? 'đánh giá' : 'bình luận'} này?`,
+            [
+                { text: "Hủy", style: "cancel" },
+                {
+                    text: "Xóa", style: "destructive", onPress: async () => {
+                        try {
+                            if (type === 'REVIEW') {
+                                await reviewService.deleteReview(Number(id));
+                                showNotification("Đã xóa đánh giá!", "success");
+                            } else {
+                                await reviewService.deleteComment(Number(id));
+                                showNotification("Đã xóa bình luận!", "success");
+                            }
+                            loadData();
+                        } catch (e) {
+                            showNotification("Xóa thất bại", "error");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSubmit = async () => {
+        console.log("Submitting with target:", editTarget, replyTarget, "Content:", myComment);
+        if (!myComment.trim() && !editTarget) {
+            showNotification("Vui lòng nhập nội dung!", "error");
+            return;
+        }
+
+        try {
+            if (editTarget) {
+                // EDIT MODE
+                if (editTarget.type === 'REVIEW') {
+                    await reviewService.updateReview(Number(editTarget.id), myRating, myComment);
+                } else {
+                    await reviewService.updateComment(Number(editTarget.id), myComment);
+                }
+                showNotification("Cập nhật thành công!", "success");
+            } else if (replyTarget) {
+                // REPLY MODE
+                console.log("Create Comment Args:", Number(replyTarget.reviewId), myComment, replyTarget.parentCommentId ? Number(replyTarget.parentCommentId) : "undefined");
+                await reviewService.createComment(Number(replyTarget.reviewId), myComment, replyTarget.parentCommentId ? Number(replyTarget.parentCommentId) : undefined);
+                showNotification("Phản hồi thành công!", "success");
+                // Auto expand replies for that review
+                const updatedReviews = reviews.map(r => r.id === replyTarget.reviewId ? { ...r, showReplies: true } : r);
+                setReviews(updatedReviews);
+            } else {
+                // CREATE REVIEW MODE
+                if (myRating === 0) {
+                    showNotification("Vui lòng chọn số sao đánh giá!", "error");
+                    return;
+                }
+                if (!locationId) {
+                    console.error("Missing Location ID in createReview");
+                    showNotification("Lỗi: Không tìm thấy ID sân!", "error");
+                    return;
+                }
+                console.log("Creating review for location:", locationId, "Rating:", myRating);
+                await reviewService.createReview(locationId, myRating, myComment);
+                showNotification("Gửi đánh giá thành công!", "success");
+            }
+
+            setModalVisible(false);
+            loadData();
+        } catch (error) {
+            console.error(error);
+            showNotification("Thao tác thất bại", "error");
         }
     };
 
-    const handleDeleteReview = () => {
-        setReviews(reviews.filter(r => r.id !== selectedReviewId));
-        setOptionsModalVisible(false);
-        showNotification("Đã xóa đánh giá!", "success");
+    // --- Render Items ---
+
+    const renderRightActions = (type: 'REVIEW' | 'COMMENT', item: any) => {
+        return (
+            <View style={{ flexDirection: 'row', width: 140, height: '100%' }}>
+                <TouchableOpacity
+                    style={[styles.swipeActionBtn, { backgroundColor: '#3B9AFF' }]}
+                    onPress={() => {
+                        // Close swipeable logic if needed
+                        openEdit(type, item, type === 'REVIEW' ? item.rating : 0);
+                    }}
+                >
+                    <Ionicons name="pencil" size={24} color="#fff" />
+                    <Text style={styles.swipeActionText}>Sửa</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.swipeActionBtn, { backgroundColor: '#FF3B30' }]}
+                    onPress={() => handleDelete(type, item.id)}
+                >
+                    <Ionicons name="trash" size={24} color="#fff" />
+                    <Text style={styles.swipeActionText}>Xóa</Text>
+                </TouchableOpacity>
+            </View>
+        );
     };
 
-    const handleEditReview = () => {
-        // Populate modal with existing data then open it
-        // For simplicity, we just close options and open the write modal as "new" for now
-        // A full edit implementation would pre-fill fields.
-        setOptionsModalVisible(false);
-        setModalVisible(true);
+    const renderReplyItem = (reply: UIReply, reviewId: string) => {
+        const isMyComment = user?.id === reply.userId;
+        const backgroundColor = isMyComment ? '#E8F5E9' : (reply.user.isOwner ? '#F0F8FF' : '#fff');
+
+        const content = (
+            <View style={[styles.replyContainer, { backgroundColor }]}>
+                <View style={styles.reviewHeader}>
+                    <Image source={{ uri: reply.user.avatar }} style={styles.avatarSmall} />
+                    <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.userName}>{reply.user.name}</Text>
+                            {reply.user.isOwner && <View style={styles.ownerBadge}><Text style={styles.ownerText}>Chủ sân</Text></View>}
+                        </View>
+                        <Text style={styles.dateText}>{reply.date}</Text>
+                    </View>
+                </View>
+                <Text style={styles.commentContent}>{reply.comment}</Text>
+                <View style={styles.actionRow}>
+                    {/* Like button removed */}
+                    {/* Only show Reply button if not my own comment (optional, or allow self-reply?) */}
+                    <TouchableOpacity
+                        style={styles.btnActionSecondary}
+                        onPress={() => openReply(reviewId, reply.id)}
+                    >
+                        <Ionicons name="chatbubble-ellipses-outline" size={14} color="#333" />
+                        <Text style={styles.btnActionTextSecondary}>Trả lời</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+
+        if (isMyComment) {
+            return (
+                <Swipeable key={reply.id} renderRightActions={() => renderRightActions('COMMENT', reply)}>
+                    {content}
+                </Swipeable>
+            );
+        }
+        return <View key={reply.id}>{content}</View>;
+    };
+
+    const renderReviewItem = ({ item }: { item: UIReview }) => {
+        const isMyReview = user?.id === item.userId;
+        const backgroundColor = isMyReview ? '#E8F5E9' : '#fff';
+
+        const content = (
+            <View style={[styles.reviewItem, { backgroundColor }]}>
+                <View style={styles.reviewHeader}>
+                    <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+                    <View style={styles.userInfo}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={styles.userName}>{item.user.name}</Text>
+                        </View>
+                        <View style={styles.ratingRow}>
+                            {[1, 2, 3, 4, 5].map(s => (
+                                <Ionicons key={s} name="star" size={12} color={s <= item.rating ? "#FFD700" : "#ddd"} />
+                            ))}
+                            <Text style={styles.dateText}>{item.date}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <Text style={styles.commentContent}>{item.comment}</Text>
+
+                {item.images && item.images.length > 0 && (
+                    <View style={styles.reviewImages}>
+                        {item.images.map((img: string, idx: number) => (
+                            <Image key={idx} source={{ uri: img }} style={styles.reviewImage} />
+                        ))}
+                    </View>
+                )}
+
+                <View style={styles.actionRow}>
+                    {/* Like button removed */}
+
+                    <TouchableOpacity
+                        style={styles.btnActionSecondary}
+                        onPress={() => {
+                            if (item.replies && item.replies.length > 0) {
+                                toggleReplies(item.id);
+                            } else {
+                                // Reply to review
+                                openReply(item.id);
+                            }
+                        }}
+                    >
+                        <Ionicons name="chatbubble-outline" size={14} color="#333" />
+                        <Text style={styles.btnActionTextSecondary}>
+                            {item.replies && item.replies.length > 0
+                                ? (item.showReplies ? "Ẩn câu trả lời" : `Xem trả lời (${item.replies.length})`)
+                                : "Trả lời"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* REPLIES AREA */}
+                {item.showReplies && item.replies.length > 0 && (
+                    <View style={styles.repliesList}>
+                        {item.replies.map(reply => renderReplyItem(reply, item.id))}
+                    </View>
+                )}
+            </View>
+        );
+
+        if (isMyReview) {
+            return (
+                <View key={item.id} style={{ marginBottom: 16 }}>
+                    <Swipeable renderRightActions={() => renderRightActions('REVIEW', item)}>
+                        {content}
+                    </Swipeable>
+                    <View style={styles.divider} />
+                </View>
+            );
+        }
+
+        return (
+            <View key={item.id} style={{ marginBottom: 16 }}>
+                {content}
+                <View style={styles.divider} />
+            </View>
+        );
     };
 
     const renderRatingBar = (star: number, count: number, total: number) => {
@@ -276,89 +395,6 @@ export default function ReviewScreen() {
         )
     };
 
-    const renderReplyItem = (reply: Reply) => (
-        <View key={reply.id} style={[styles.replyContainer, reply.user.isOwner && styles.replyContainerOwner]}>
-            <View style={styles.reviewHeader}>
-                <Image source={{ uri: reply.user.avatar }} style={styles.avatarSmall} />
-                <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={styles.userName}>{reply.user.name}</Text>
-                        {reply.user.isOwner && <View style={styles.ownerBadge}><Text style={styles.ownerText}>Chủ sân</Text></View>}
-                    </View>
-                    <Text style={styles.dateText}>{reply.date}</Text>
-                </View>
-            </View>
-            <Text style={styles.commentContent}>{reply.comment}</Text>
-            <View style={styles.actionRow}>
-                <TouchableOpacity
-                    style={[styles.btnAction, reply.isLiked && styles.btnActionActive]}
-                    onPress={() => handleVote(reply.id, true)}>
-                    <Ionicons name="thumbs-up" size={14} color={reply.isLiked ? "#fff" : "#fff"} />
-                    <Text style={[styles.btnActionText, reply.isLiked && { color: '#fff' }]}>{reply.likes}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnActionSecondary}>
-                    <Ionicons name="chatbox-ellipses" size={14} color="#333" />
-                    <Text style={styles.btnActionTextSecondary}>Trả lời</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-
-    const renderReviewItem = ({ item }: { item: Review }) => (
-        <View style={styles.reviewItem}>
-            <View style={styles.reviewHeader}>
-                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-                <View style={styles.userInfo}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={styles.userName}>{item.user.name}</Text>
-                        {item.user.name === 'Phạm Thanh Phong' && (
-                            <TouchableOpacity onPress={() => handleOptionsPress(item)}>
-                                <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                    <View style={styles.ratingRow}>
-                        {[1, 2, 3, 4, 5].map(s => (
-                            <Ionicons key={s} name="star" size={12} color={s <= item.rating ? "#FFD700" : "#ddd"} />
-                        ))}
-                        <Text style={styles.dateText}>{item.date}</Text>
-                    </View>
-                </View>
-            </View>
-
-            <Text style={styles.commentContent}>{item.comment}</Text>
-
-            {item.images && item.images.length > 0 && (
-                <View style={styles.reviewImages}>
-                    {item.images.map((img: string, idx: number) => (
-                        <Image key={idx} source={{ uri: img }} style={styles.reviewImage} />
-                    ))}
-                </View>
-            )}
-
-            <View style={styles.actionRow}>
-                <TouchableOpacity
-                    style={[styles.btnAction, item.isLiked && styles.btnActionActive]}
-                    onPress={() => handleVote(item.id)}>
-                    <Ionicons name="thumbs-up" size={14} color={item.isLiked ? "#fff" : "#fff"} />
-                    <Text style={[styles.btnActionText, item.isLiked && { color: '#fff' }]}>{item.likes}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.btnActionSecondary} onPress={() => toggleReplies(item.id)}>
-                    <Ionicons name="chatbox" size={14} color="#333" />
-                    <Text style={styles.btnActionTextSecondary}>Trả lời</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* REPLIES AREA */}
-            {item.showReplies && item.replies.length > 0 && (
-                <View style={styles.repliesList}>
-                    {item.replies.map(renderReplyItem)}
-                </View>
-            )}
-        </View>
-    );
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
@@ -374,14 +410,14 @@ export default function ReviewScreen() {
                 {/* Summary Section */}
                 <View style={styles.summaryContainer}>
                     <View style={styles.bigRating}>
-                        <Text style={styles.bigScore}>{RATING_STATS.average}</Text>
+                        <Text style={styles.bigScore}>{stats.averageRating ? stats.averageRating.toFixed(1) : '0.0'}</Text>
                         <View style={{ flexDirection: 'row' }}>
                             {[1, 2, 3, 4, 5].map(s => <Ionicons key={s} name="star" size={14} color="#FFD700" />)}
                         </View>
-                        <Text style={styles.totalReviews}>{RATING_STATS.total} đánh giá</Text>
+                        <Text style={styles.totalReviews}>{stats.totalReviews} đánh giá</Text>
                     </View>
                     <View style={styles.barsColumn}>
-                        {[5, 4, 3, 2, 1].map(star => renderRatingBar(star, RATING_STATS.counts[star as keyof typeof RATING_STATS.counts], RATING_STATS.total))}
+                        {[5, 4, 3, 2, 1].map(star => renderRatingBar(star, stats.counts ? (stats.counts[star] || 0) : 0, stats.totalReviews))}
                     </View>
                 </View>
 
@@ -400,52 +436,54 @@ export default function ReviewScreen() {
 
                 {/* Reviews List */}
                 <View style={styles.reviewsList}>
-                    {reviews.map(item => (
-                        <View key={item.id}>
-                            {renderReviewItem({ item })}
-                            <View style={styles.divider} />
-                        </View>
-                    ))}
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#3B9AFF" style={{ marginTop: 20 }} />
+                    ) : (
+                        reviews.map(item => renderReviewItem({ item }))
+                    )}
                 </View>
             </ScrollView>
 
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={styles.fab} onPress={openCreateReview}>
                 <Ionicons name="pencil" size={24} color="#fff" />
             </TouchableOpacity>
 
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
+            {modalVisible && (
+                <View style={[styles.modalOverlay, { zIndex: 9998 }]}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Đánh giá của bạn</Text>
+                        <Text style={styles.modalTitle}>
+                            {editTarget
+                                ? (editTarget.type === 'REVIEW' ? "Chỉnh sửa đánh giá" : "Chỉnh sửa bình luận")
+                                : (replyTarget ? "Trả lời bình luận" : "Đánh giá của bạn")
+                            }
+                        </Text>
                         <View style={styles.miniUser}>
-                            <Image source={{ uri: "https://i.pravatar.cc/150?u=99" }} style={styles.miniAvatar} />
+                            <Image source={{ uri: user?.avatar || "https://i.pravatar.cc/150?u=99" }} style={styles.miniAvatar} />
                             <View>
-                                <Text style={styles.miniName}>Phạm Thanh Phong</Text>
-                                <Text style={styles.miniNote}>Nhật ký chỉnh sửa là thông tin công khai</Text>
+                                <Text style={styles.miniName}>{user?.fullName || "Tôi"}</Text>
+                                <Text style={styles.miniNote}>Thông tin công khai</Text>
                             </View>
                         </View>
 
-                        <View style={styles.starInputRow}>
-                            {[1, 2, 3, 4, 5].map(s => (
-                                <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
-                                    <Ionicons
-                                        name={s <= myRating ? "star" : "star-outline"}
-                                        size={32}
-                                        color="#FFD700"
-                                        style={{ marginHorizontal: 4 }}
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Rating only show if Review (Edit Review or Create Review) */}
+                        {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                            <View style={styles.starInputRow}>
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
+                                        <Ionicons
+                                            name={s <= myRating ? "star" : "star-outline"}
+                                            size={32}
+                                            color="#FFD700"
+                                            style={{ marginHorizontal: 4 }}
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
 
                         <View style={styles.inputContainer}>
                             <TextInput
-                                placeholder="Hãy mô tả trải nghiệm của bạn về sân cầu lông này..."
+                                placeholder={replyTarget ? "Nhập câu trả lời của bạn..." : "Hãy mô tả trải nghiệm của bạn..."}
                                 multiline
                                 style={styles.textInput}
                                 value={myComment}
@@ -453,61 +491,40 @@ export default function ReviewScreen() {
                             />
                         </View>
 
-                        <View style={styles.addImageAction}>
-                            <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
-                            <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
-                                {selectedImages.length > 0 ? (
-                                    <ScrollView horizontal>
-                                        {selectedImages.map((uri, idx) => (
-                                            <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
-                                        ))}
-                                    </ScrollView>
-                                ) : (
-                                    <>
-                                        <Ionicons name="images-outline" size={24} color="#666" />
-                                        <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                        {/* Image picker only for Reviews */}
+                        {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                            <View style={styles.addImageAction}>
+                                <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
+                                <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
+                                    {selectedImages.length > 0 ? (
+                                        <ScrollView horizontal>
+                                            {selectedImages.map((uri, idx) => (
+                                                <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
+                                            ))}
+                                        </ScrollView>
+                                    ) : (
+                                        <>
+                                            <Ionicons name="images-outline" size={24} color="#666" />
+                                            <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
                                 <Text style={styles.cancelText}>Quay lại</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitReview}>
-                                <Text style={styles.submitText}>Gửi đánh giá</Text>
+                            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                                <Text style={styles.submitText}>
+                                    {editTarget ? "Cập nhật" : (replyTarget ? "Phản hồi" : "Gửi đánh giá")}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
-            </Modal>
-
-            {/* Options Modal (Edit/Delete) */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={optionsModalVisible}
-                onRequestClose={() => setOptionsModalVisible(false)}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setOptionsModalVisible(false)}
-                >
-                    <View style={styles.optionsModalContent}>
-                        <TouchableOpacity style={styles.optionItem} onPress={handleEditReview}>
-                            <Ionicons name="pencil" size={20} color="#333" />
-                            <Text style={styles.optionText}>Chỉnh sửa</Text>
-                        </TouchableOpacity>
-                        <View style={styles.optionDivider} />
-                        <TouchableOpacity style={styles.optionItem} onPress={handleDeleteReview}>
-                            <Ionicons name="trash" size={20} color="#333" />
-                            <Text style={styles.optionText}>Xóa</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+            )}
         </SafeAreaView >
     );
 }
@@ -547,11 +564,9 @@ const styles = StyleSheet.create({
     reviewImage: { width: 100, height: 80, borderRadius: 4, marginRight: 8, resizeMode: 'cover' },
     actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
 
-    // Optimized Buttons
-    // Shared button style
     btnAction: {
         flexDirection: 'row',
-        backgroundColor: '#ddd', // Default grey like provided image (button background)
+        backgroundColor: '#f5f5f5',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 6,
@@ -560,22 +575,20 @@ const styles = StyleSheet.create({
         minWidth: 50,
         justifyContent: 'center'
     },
-    // When active (liked), it turns blue
     btnActionActive: {
         backgroundColor: '#3B9AFF'
     },
     btnActionSecondary: {
         flexDirection: 'row',
-        backgroundColor: '#ddd', // Grey
+        backgroundColor: '#f5f5f5',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 6,
         alignItems: 'center',
     },
-    btnActionText: { color: '#333', fontSize: 12, marginLeft: 4, fontWeight: 'bold' },
-    btnActionTextSecondary: { color: '#333', fontSize: 12, marginLeft: 4, fontWeight: 'bold' },
+    btnActionText: { color: '#666', fontSize: 12, marginLeft: 4, fontWeight: 'bold' },
+    btnActionTextSecondary: { color: '#666', fontSize: 12, marginLeft: 4, fontWeight: 'bold' },
 
-    // Replies
     repliesList: {
         marginTop: 10,
         borderLeftWidth: 2,
@@ -590,9 +603,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#eee'
     },
-    replyContainerOwner: {
-        backgroundColor: '#F0F8FF' // Light AliceBlue for owner
-    },
     ownerBadge: {
         backgroundColor: '#3B9AFF',
         paddingHorizontal: 4,
@@ -604,7 +614,7 @@ const styles = StyleSheet.create({
 
     divider: { height: 1, backgroundColor: '#eee', marginHorizontal: 16 },
     fab: { position: 'absolute', bottom: 30, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: '#3B9AFF', alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+    modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
     modalContent: { backgroundColor: '#fff', borderRadius: 12, padding: 20, alignItems: 'center' },
     modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20 },
     miniUser: { flexDirection: 'row', alignSelf: 'flex-start', marginBottom: 16, alignItems: 'center' },
@@ -623,37 +633,16 @@ const styles = StyleSheet.create({
     submitBtn: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#3B9AFF', borderRadius: 8, flex: 0.45, alignItems: 'center' },
     submitText: { fontWeight: 'bold', color: '#fff' },
 
-    // Options Modal
-    optionsModalContent: {
-        backgroundColor: '#eee',
-        borderRadius: 12,
-        padding: 0,
-        width: 150,
-        position: 'absolute',
-        right: 40, // Position towards the right
-        top: '25%', // Approximate general position or handle dynamically
-        // Ideally we would use `measure` on the pressed element to position exactly, 
-        // but for now placing it roughly where the "..." usually is on the list items
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-    },
-    optionItem: {
-        flexDirection: 'row',
+    // Swipe Actions
+    swipeActionBtn: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        padding: 12,
     },
-    optionText: {
-        fontSize: 14,
-        fontWeight: '500',
-        marginLeft: 10,
-        color: '#333'
-    },
-    optionDivider: {
-        height: 1,
-        backgroundColor: '#ccc',
-        marginHorizontal: 10
+    swipeActionText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+        marginTop: 4
     }
 });

@@ -18,20 +18,24 @@ import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
 import { locationService } from '../../services/locationService';
 import { LocationDTO } from '../../types/location';
+import { courtService } from '../../services/courtService'; // Keep for Provinces/Districts options
 import { Header } from '../../components/Header';
 const { width, height } = Dimensions.get('window');
 
-export interface Court {
+// Logic for Location -> UI Court
+interface Court {
   id: number;
+  locationId?: number;
   name: string;
   address: string;
-  time: string;
+  rating: number;
+  pricePerHour: number;
+  openTime?: string;
+  closeTime?: string;
   image: any;
-  price: number;
+  phone?: string;
+  description?: string;
 }
-
-// --- Sample Data (Expanded) ---
-// const INITIAL_COURTS: Court[] = [...]; // Hardcode removed
 
 const ITEMS_PER_PAGE = 6;
 
@@ -40,48 +44,101 @@ export default function HomeScreen() {
   const [isFilterVisible, setFilterVisible] = useState(false);
   const navigation = useNavigation<any>();
 
-  // Use state data (could be filtered later)
   const [courtsData, setCourtsData] = useState<Court[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filter Data States (Options)
+  const [provinces, setProvinces] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+
+  // Search & Sort State
+  const [searchText, setSearchText] = useState('');
+  const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | null>(null);
+
+  // Filter States
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+
+
   useEffect(() => {
-    fetchCourts();
+    fetchInitialData();
   }, []);
 
-  const fetchCourts = async (filters?: { city?: string; district?: string; min?: number; max?: number }) => {
+  const fetchInitialData = async () => {
+    try {
+      const [provs] = await Promise.all([
+        courtService.getProvinces()
+      ]);
+      setProvinces(provs);
+      fetchCourts(); // Initial fetch
+    } catch (e) {
+      console.error("Init Error:", e);
+      fetchCourts();
+    }
+  }
+
+  const fetchCourts = async (filters?: { searchText?: string; city?: string; district?: string; min?: number; max?: number; sort?: 'price_asc' | 'price_desc' | null }) => {
     try {
       setIsLoading(true);
 
-      let data: LocationDTO[] = [];
+      let rawData: LocationDTO[] = [];
+      const query = filters?.searchText || searchText;
 
-      // 1. Fetch from API based on location (Address search)
-      if (filters?.city || filters?.district) {
-        const searchTerm = `${filters.district || ''} ${filters.city || ''}`.trim();
-        data = await locationService.getLocationsByAddress(searchTerm);
+      // 1. Fetch Data
+      if (query) {
+        rawData = await locationService.getLocationsByAddress(query);
       } else {
-        data = await locationService.getAllLocations();
+        rawData = await locationService.getAllLocations();
       }
 
-      // 2. Map to Court Interface
-      let mappedCourts: Court[] = data.map((item: LocationDTO) => ({
-        id: item.id,
-        name: item.name,
-        address: item.address,
-        time: "6:00 AM - 10:00 PM",
-        image: item.id % 2 === 0 ? require("../../assets/images/court2.png") : require("../../assets/images/court1.png"),
-        price: item.pricePerHour
+      // 2. Map to UI Model
+      let mapped: Court[] = rawData.map(loc => ({
+        id: loc.id,
+        locationId: loc.id, // Ensure explicit locationId for CourtDetail usage
+        name: loc.name,
+        address: loc.address,
+        rating: loc.rating || 5,
+        pricePerHour: loc.pricePerHour,
+        openTime: "06:00", // Default
+        closeTime: "22:00", // Default
+        image: { uri: "https://images.unsplash.com/photo-1626224583764-84786071963f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
+        // Fallback to online image to avoid 'require' errors if assets are missing
+        phone: "0123456789",
+        description: "Sân cầu lông chất lượng cao..."
       }));
 
-      // 3. Client-side filtering for Price
-      if (filters?.min !== undefined && filters?.min !== null && !isNaN(filters.min)) {
-        mappedCourts = mappedCourts.filter(c => c.price >= filters.min!);
+      // 3. Client-side Filter
+      const city = filters?.city || selectedCity;
+      const district = filters?.district || selectedDistrict;
+      const min = filters?.min !== undefined ? filters.min : (minPrice ? parseInt(minPrice) : undefined);
+      const max = filters?.max !== undefined ? filters.max : (maxPrice ? parseInt(maxPrice) : undefined);
+
+      if (city) {
+        mapped = mapped.filter(c => c.address.toLowerCase().includes(city.toLowerCase()));
       }
-      if (filters?.max !== undefined && filters?.max !== null && !isNaN(filters.max)) {
-        mappedCourts = mappedCourts.filter(c => c.price <= filters.max!);
+      if (district) {
+        mapped = mapped.filter(c => c.address.toLowerCase().includes(district.toLowerCase()));
+      }
+      if (min !== undefined && !isNaN(min)) {
+        mapped = mapped.filter(c => c.pricePerHour >= min);
+      }
+      if (max !== undefined && !isNaN(max)) {
+        mapped = mapped.filter(c => c.pricePerHour <= max);
       }
 
-      setCourtsData(mappedCourts);
-      // Reset Page to 1 when filtering
+      // 4. Sort
+      const sort = filters?.sort || sortBy;
+      if (sort === 'price_asc') {
+        mapped.sort((a, b) => a.pricePerHour - b.pricePerHour);
+      } else if (sort === 'price_desc') {
+        mapped.sort((a, b) => b.pricePerHour - a.pricePerHour);
+      }
+
+      setCourtsData(mapped);
       setCurrentPage(1);
     } catch (error) {
       console.error("Failed to fetch courts:", error);
@@ -95,21 +152,28 @@ export default function HomeScreen() {
     const max = maxPrice ? parseInt(maxPrice) : undefined;
 
     fetchCourts({
+      searchText,
       city: selectedCity,
       district: selectedDistrict,
       min,
-      max
+      max,
+      sort: sortBy
     });
     setFilterVisible(false);
   };
 
-  // Filter States
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const onSelectCity = async (city: string) => {
+    setSelectedCity(city);
+    setSelectedDistrict('');
+    try {
+      const dists = await courtService.getDistrictsByProvince(city);
+      setDistricts(dists);
+    } catch (e) {
+      console.error(e);
+      setDistricts([]);
+    }
+  };
+
 
   // Pagination Logic
   const totalPages = Math.ceil(courtsData.length / ITEMS_PER_PAGE);
@@ -132,17 +196,26 @@ export default function HomeScreen() {
 
   const renderHeader = () => (
     <View>
-      <Header/>
+      <Header />
       <View style={styles.titleContainer}>
         <Text style={styles.mainTitle}>Đặt sân cầu lông bạn muốn!</Text>
         <View style={styles.separator} />
       </View>
 
       <View style={styles.searchContainer}>
-        <TouchableOpacity style={styles.searchBox} onPress={() => setFilterVisible(true)}>
-          <Ionicons name="filter-outline" size={20} color="#666" style={{ marginRight: 8 }} />
-          <Text style={[styles.searchInput, { color: '#999' }]}>Nhập tên sân..</Text>
-          <Ionicons name="search-outline" size={20} color="#666" />
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={20} color="#666" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm theo tên, địa chỉ..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={() => fetchCourts({ searchText, city: selectedCity, district: selectedDistrict, min: minPrice ? parseInt(minPrice) : undefined, max: maxPrice ? parseInt(maxPrice) : undefined, sort: sortBy })}
+          />
+        </View>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterVisible(true)}>
+          <Ionicons name="options-outline" size={24} color="#3B9AFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -155,7 +228,14 @@ export default function HomeScreen() {
       onPress={() => handleCourtPress(item)}
     >
       <View style={styles.imageContainer}>
-        <Image source={item.image} style={styles.courtImage} />
+        <Image
+          source={
+            (item.image && item.image.uri)
+              ? item.image
+              : { uri: "https://images.unsplash.com/photo-1626224583764-84786071963f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" }
+          }
+          style={styles.courtImage}
+        />
         {/* Overlay Icons */}
         <View style={styles.overlayIcons}>
           <View style={styles.iconBadge}>
@@ -173,7 +253,7 @@ export default function HomeScreen() {
           {item.address}
         </Text>
         <Text style={styles.courtTime}>
-          <Text style={{ fontWeight: 'bold' }}>{item.time.split('-')[0]}</Text> - <Text style={{ fontWeight: 'bold' }}>{item.time.split('-')[1]}</Text>
+          <Text style={{ fontWeight: 'bold' }}>{item.openTime?.substring(0, 5)}</Text> - <Text style={{ fontWeight: 'bold' }}>{item.closeTime?.substring(0, 5)}</Text>
         </Text>
 
         <TouchableOpacity style={styles.bookButton} onPress={() => handleCourtPress(item)}>
@@ -187,7 +267,7 @@ export default function HomeScreen() {
     if (totalPages <= 1) return null;
 
     // Generate page numbers to show
-    let pages = [];
+    let pages: number[] = [];
     if (totalPages <= 5) {
       pages = Array.from({ length: totalPages }, (_, i) => i + 1);
     } else {
@@ -218,6 +298,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
 
+        {/* Simplified logic for dots */}
         {totalPages > 5 && currentPage < totalPages - 2 && (
           <View style={styles.dotsContainer}>
             <Text>...</Text>
@@ -253,7 +334,7 @@ export default function HomeScreen() {
           </View>
           <FlatList
             data={data}
-            keyExtractor={(item) => item}
+            keyExtractor={(item, index) => item + index}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={{ padding: 16, borderBottomWidth: 1, borderColor: '#f0f0f0' }}
@@ -287,6 +368,7 @@ export default function HomeScreen() {
             setSelectedDistrict('');
             setMinPrice('');
             setMaxPrice('');
+            setSortBy(null);
           }}>
             <Text style={{ color: '#3B9AFF', fontWeight: 'bold' }}>Đặt lại</Text>
           </TouchableOpacity>
@@ -328,6 +410,25 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-down" size={16} color="#999" style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
 
+            </View>
+          </View>
+
+          {/* Sort Section */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionHeader}>Sắp xếp</Text>
+            <View style={styles.keywordsContainer}>
+              <TouchableOpacity
+                style={[styles.keywordChip, sortBy === 'price_asc' && styles.keywordChipActive]}
+                onPress={() => setSortBy(sortBy === 'price_asc' ? null : 'price_asc')}
+              >
+                <Text style={[styles.keywordText, sortBy === 'price_asc' && styles.keywordTextActive]}>Giá tăng dần</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.keywordChip, sortBy === 'price_desc' && styles.keywordChipActive]}
+                onPress={() => setSortBy(sortBy === 'price_desc' ? null : 'price_desc')}
+              >
+                <Text style={[styles.keywordText, sortBy === 'price_desc' && styles.keywordTextActive]}>Giá giảm dần</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -383,15 +484,15 @@ export default function HomeScreen() {
         {renderLocationPicker(
           showCityPicker,
           "Chọn Tỉnh/Thành phố",
-          VIETNAM_LOCATIONS.map(l => l.name),
-          (city) => { setSelectedCity(city); setSelectedDistrict(''); },
+          provinces,
+          onSelectCity,
           () => setShowCityPicker(false)
         )}
 
         {renderLocationPicker(
           showDistrictPicker,
           "Chọn Quận/Huyện",
-          selectedCity ? (VIETNAM_LOCATIONS.find(l => l.name === selectedCity)?.districts || []) : [],
+          districts,
           (district) => setSelectedDistrict(district),
           () => setShowDistrictPicker(false)
         )}
@@ -405,10 +506,10 @@ export default function HomeScreen() {
       <FlatList
         data={currentCourts}
         renderItem={renderCourtItem}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         ListFooterComponent={renderPagination}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
@@ -467,16 +568,35 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 16,
     marginBottom: 20,
-  },
-  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#3B9AFF',
-    borderRadius: 25,
+    gap: 12
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    height: 45,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#EEE'
+  },
+  filterBtn: {
+    width: 50,
+    height: 50,
     backgroundColor: '#fff',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2
   },
   searchInput: {
     flex: 1,
@@ -684,6 +804,13 @@ const styles = StyleSheet.create({
     borderColor: '#D6E4FF'
   },
   keywordText: { color: '#3B9AFF', fontSize: 13, fontWeight: '500' },
+  keywordChipActive: {
+    backgroundColor: '#3B9AFF',
+    borderColor: '#3B9AFF'
+  },
+  keywordTextActive: {
+    color: '#fff'
+  },
 
   // Footer
   modalFooter: {

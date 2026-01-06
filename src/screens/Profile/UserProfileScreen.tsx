@@ -9,7 +9,8 @@ import {
     StatusBar,
     Alert,
     TextInput,
-    ActivityIndicator
+    ActivityIndicator,
+    Modal
 } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { authService } from '../../services/authService';
@@ -72,6 +73,14 @@ export default function UserProfileScreen() {
         phone: ""
     });
 
+    const [isChangePasswordVisible, setIsChangePasswordVisible] = useState(false);
+    const [loadingPassword, setLoadingPassword] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
     useEffect(() => {
         if (user) {
             setFormData({
@@ -85,7 +94,7 @@ export default function UserProfileScreen() {
     const displayUser = {
         name: user?.fullName || "Người dùng",
         email: user?.email || "",
-        avatar: user?.avatar || "https://i.pravatar.cc/300",
+        avatar: (user?.avatar && user.avatar.trim() !== "") ? user.avatar : "https://i.pravatar.cc/300",
         phone: user?.phone || "",
         gender: "Nam",
         dob: "01/01/2000",
@@ -101,21 +110,8 @@ export default function UserProfileScreen() {
 
         setIsLoading(true);
         try {
-            // Split Full Name into firstName and lastName logic (Basic)
-            const parts = formData.fullName.trim().split(" ");
-            let firstName = "";
-            let lastName = "";
-
-            if (parts.length === 1) {
-                firstName = parts[0];
-            } else if (parts.length > 1) {
-                firstName = parts[0];
-                lastName = parts.slice(1).join(" ");
-            }
-
             const updatePayload = {
-                firstName: firstName,
-                lastName: lastName,
+                fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone
             };
@@ -144,7 +140,7 @@ export default function UserProfileScreen() {
         // Reset form
         if (user) {
             setFormData({
-                fullName: user.fullName || user.name || "",
+                fullName: user.fullName || "",
                 email: user.email || "",
                 phone: user.phone || ""
             });
@@ -170,6 +166,33 @@ export default function UserProfileScreen() {
                 style: "destructive"
             }
         ]);
+    };
+
+    const handleSubmitChangePassword = async () => {
+        if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+            Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            Alert.alert("Lỗi", "Mật khẩu mới không khớp");
+            return;
+        }
+
+        setLoadingPassword(true);
+        try {
+            await authService.changePassword({
+                oldPassword: passwordForm.oldPassword,
+                newPassword: passwordForm.newPassword
+            });
+            Alert.alert("Thành công", "Đổi mật khẩu thành công!");
+            setIsChangePasswordVisible(false);
+            setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error: any) {
+            console.error(error);
+            Alert.alert("Lỗi", error.response?.data?.message || error.response?.data || "Đổi mật khẩu thất bại");
+        } finally {
+            setLoadingPassword(false);
+        }
     };
 
     return (
@@ -278,13 +301,23 @@ export default function UserProfileScreen() {
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => setIsEditing(true)}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.editButtonText}>Chỉnh sửa thông tin</Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity
+                                style={styles.editButton}
+                                onPress={() => setIsEditing(true)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.editButtonText}>Chỉnh sửa thông tin</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.editButton, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#64B5F6', marginTop: -10 }]}
+                                onPress={() => setIsChangePasswordVisible(true)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.editButtonText, { color: '#64B5F6' }]}>Đổi mật khẩu</Text>
+                            </TouchableOpacity>
+                        </>
                     )}
 
                     <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
@@ -293,6 +326,78 @@ export default function UserProfileScreen() {
 
                 </View>
             </ScrollView>
+
+            {/* --- CHANGE PASSWORD MODAL --- */}
+            <Modal
+                visible={isChangePasswordVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsChangePasswordVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Đổi mật khẩu</Text>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Mật khẩu cũ</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={passwordForm.oldPassword}
+                                onChangeText={(t) => setPasswordForm({ ...passwordForm, oldPassword: t })}
+                                secureTextEntry
+                                placeholder="Nhập mật khẩu cũ"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Mật khẩu mới</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={passwordForm.newPassword}
+                                onChangeText={(t) => setPasswordForm({ ...passwordForm, newPassword: t })}
+                                secureTextEntry
+                                placeholder="Nhập mật khẩu mới"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={passwordForm.confirmPassword}
+                                onChangeText={(t) => setPasswordForm({ ...passwordForm, confirmPassword: t })}
+                                secureTextEntry
+                                placeholder="Nhập lại mật khẩu mới"
+                            />
+                        </View>
+
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.cancelButton]}
+                                onPress={() => {
+                                    setIsChangePasswordVisible(false);
+                                    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                                }}
+                                disabled={loadingPassword}
+                            >
+                                <Text style={styles.cancelButtonText}>Hủy</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.saveButton]}
+                                onPress={handleSubmitChangePassword}
+                                disabled={loadingPassword}
+                            >
+                                {loadingPassword ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>Đổi mật khẩu</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -510,4 +615,39 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
     },
+
+    // MODAL Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+        color: '#333'
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 15,
+    }
 });

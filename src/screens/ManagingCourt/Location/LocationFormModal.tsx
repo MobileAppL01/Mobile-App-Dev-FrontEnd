@@ -11,16 +11,19 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-// Điều chỉnh đường dẫn import styles tùy vào cấu trúc thư mục của bạn
-import { styles } from "./ManageLocationScreen.styles"; 
+import * as ImagePicker from 'expo-image-picker';
+import { styles } from "./ManageLocationScreen.styles";
+import { manageCourtService } from "../../../services/manageCourtService";
 
 interface LocationFormProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
-  initialData?: any; // Dữ liệu cũ nếu là đang Sửa
+  initialData?: any;
 }
 
 const LocationFormModal: React.FC<LocationFormProps> = ({
@@ -29,46 +32,75 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
   onSubmit,
   initialData,
 }) => {
-  // State nội bộ của Form
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [openTime, setOpenTime] = useState("05:00:00");
   const [closeTime, setCloseTime] = useState("22:00:00");
+  const [imageUri, setImageUri] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
 
-  // Mỗi khi mở modal (visible thay đổi) hoặc đổi item sửa (initialData thay đổi)
-  // thì fill dữ liệu vào form
   useEffect(() => {
     if (visible) {
       if (initialData) {
-        // Mode: EDIT
         setName(initialData.name);
         setAddress(initialData.address);
         setDescription(initialData.description || "");
         setPrice(initialData.pricePerHour ? initialData.pricePerHour.toString() : "");
         setOpenTime(initialData.openTime || "05:00:00");
         setCloseTime(initialData.closeTime || "22:00:00");
+        setImageUri(initialData.image || "");
       } else {
-        // Mode: ADD NEW -> Reset form
         setName("");
         setAddress("");
         setDescription("");
         setPrice("");
         setOpenTime("05:00:00");
         setCloseTime("22:00:00");
+        setImageUri("");
       }
     }
   }, [visible, initialData]);
 
+  const handlePickImage = async () => {
+    try {
+      // 1. Pick Image (Permissions handled automatically or implicitly)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const pickedAsset = result.assets[0];
+        // 3. Upload Immediately
+        setUploading(true);
+        try {
+          const uploadRes = await manageCourtService.uploadFile(pickedAsset, 'location');
+          if (uploadRes && uploadRes.url) {
+            setImageUri(uploadRes.url); // Save the Cloudinary URL
+            Alert.alert("Thành công", "Đã tải ảnh lên!");
+          }
+        } catch (error) {
+          Alert.alert("Lỗi tải ảnh", "Không thể tải ảnh lên server.");
+        } finally {
+          setUploading(false);
+        }
+      }
+    } catch (error) {
+      console.log('Pick image error', error);
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = () => {
-    // Validate cơ bản tại form
     if (!name || !address || !price) {
       Alert.alert("Thiếu thông tin", "Vui lòng nhập Tên, Địa chỉ và Giá tiền");
       return;
     }
-    
-    // Gửi dữ liệu ra ngoài cho màn hình cha xử lý
+
     onSubmit({
       name,
       address,
@@ -76,7 +108,7 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
       pricePerHour: Number(price),
       openTime,
       closeTime,
-      image: "string", // Hoặc xử lý ảnh nếu có
+      image: imageUri || "string", // Provide URL or placeholder
       courts: initialData ? initialData.courts : [],
     });
   };
@@ -105,6 +137,35 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
+                {/* --- Image Picker UI --- */}
+                <Text style={styles.label}>Ảnh đại diện</Text>
+                <TouchableOpacity onPress={handlePickImage} style={{
+                  height: 150,
+                  backgroundColor: '#e1e1e1',
+                  borderRadius: 8,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 15,
+                  overflow: 'hidden'
+                }}>
+                  {uploading ? (
+                    <ActivityIndicator size="large" color="#3B9AFF" />
+                  ) : imageUri ? (
+                    <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : (
+                    <View style={{ alignItems: 'center' }}>
+                      <Ionicons name="camera-outline" size={32} color="#888" />
+                      <Text style={{ color: '#666', marginTop: 5 }}>Chạm để chọn ảnh</Text>
+                    </View>
+                  )}
+                  {/* Badge 'Sửa' nếu đã có ảnh */}
+                  {!uploading && imageUri && (
+                    <View style={{ position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,0.5)', padding: 5, borderRadius: 5 }}>
+                      <Text style={{ color: 'white', fontSize: 10 }}>Thay đổi</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
                 <Text style={styles.label}>
                   Tên cơ sở <Text style={{ color: "red" }}>*</Text>
                 </Text>
@@ -164,7 +225,7 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit} disabled={uploading}>
                   <Text style={styles.saveBtnText}>
                     {initialData ? "Cập Nhật" : "Lưu Thông Tin"}
                   </Text>

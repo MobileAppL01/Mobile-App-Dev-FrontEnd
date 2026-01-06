@@ -102,7 +102,8 @@ const styles = StyleSheet.create({
         left: 20,
         right: 20,
         alignItems: 'center', // Center content horizontally
-        zIndex: 9999,
+        zIndex: 99999, // Absolute highest
+        elevation: 100, // For Android top layer
         // No conditional render from store means we need to ensure it doesn't block touches when hidden
     },
     content: {

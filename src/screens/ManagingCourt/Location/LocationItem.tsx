@@ -32,6 +32,7 @@ interface LocationItemProps {
   onDelete: (item: any) => void;
   onOpenPromo: (item: any) => void; // Hàm mở modal tạo mới KM
   refreshTrigger?: string | null; // <--- THÊM PROP NÀY
+  onViewReviews?: (item: any) => void; // <--- THÊM PROP XEM ĐÁNH GIÁ (OPTIONAL ĐỂ TRÁNH LỖI NẾU CHƯA TRUYỀN)
 }
 
 const LocationItem: React.FC<LocationItemProps> = ({
@@ -41,6 +42,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
   onDelete,
   onOpenPromo,
   refreshTrigger, // <--- Nhận prop
+  onViewReviews, // <--- Nhận prop
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [promotions, setPromotions] = useState<any[]>([]);
@@ -68,7 +70,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
     if (refreshTrigger && refreshTrigger.includes(item.id)) {
       fetchPromotions();
       // Nếu đang đóng thì tự mở ra để user thấy kết quả (Optional)
-      if (!expanded) setExpanded(true); 
+      if (!expanded) setExpanded(true);
     }
   }, [refreshTrigger]);
 
@@ -204,6 +206,13 @@ const LocationItem: React.FC<LocationItemProps> = ({
             <TouchableOpacity onPress={() => onOpenPromo(item)}>
               <Ionicons name="add-circle" size={32} color="#3B9AFF" />
             </TouchableOpacity>
+
+            {/* Nút Xem đánh giá (Ngôi sao) */}
+            {onViewReviews && (
+              <TouchableOpacity onPress={() => onViewReviews(item)} style={{ marginTop: 10 }}>
+                <Ionicons name="star-half-outline" size={28} color="#F59E0B" />
+              </TouchableOpacity>
+            )}
 
             {/* Nút Mở rộng (Mũi tên V) */}
             <TouchableOpacity

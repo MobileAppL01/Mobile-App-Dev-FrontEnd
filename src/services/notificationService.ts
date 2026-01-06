@@ -10,7 +10,7 @@ export interface NotificationItem {
 }
 
 export const notificationService = {
-    // Get all notifications
+    // Get all notifications for Player
     getNotifications: async (): Promise<NotificationItem[]> => {
         try {
             const response = await axiosInstance.get('/notifications');
@@ -35,6 +35,30 @@ export const notificationService = {
         }
     },
 
+    // Get all notifications for Owner
+    getOwnerNotifications: async (): Promise<NotificationItem[]> => {
+        try {
+            const response = await axiosInstance.get('/owner/notifications');
+            const data = response.data;
+
+            if (!Array.isArray(data)) {
+                return [];
+            }
+
+            return data.map((item: any) => ({
+                id: item.notificationId?.toString(),
+                title: getTitleFromType(item.type),
+                message: item.briefNotification,
+                type: item.type,
+                isRead: item.notificationIsRead,
+                createdAt: item.createdAt
+            }));
+        } catch (error) {
+            console.error("Error fetching owner notifications:", error);
+            return [];
+        }
+    },
+
 
     // Mark as read
     markAsRead: async (id: string) => {
@@ -52,6 +76,22 @@ export const notificationService = {
         } catch (error) {
             console.error("Error marking all notifications as read:", error);
         }
+    },
+
+    deleteNotification: async (id: string) => {
+        await axiosInstance.delete(`/notifications/${id}`);
+    },
+
+    deleteAllNotifications: async () => {
+        await axiosInstance.delete(`/notifications`);
+    },
+
+    deleteOwnerNotification: async (id: string) => {
+        await axiosInstance.delete(`/owner/notifications/${id}`);
+    },
+
+    deleteAllOwnerNotifications: async () => {
+        await axiosInstance.delete(`/owner/notifications`);
     }
 };
 

@@ -60,17 +60,11 @@ const SignUpScreen = ({ navigation, route }: SignUpProps) => {
       return;
     }
 
-    // Tách họ và tên
-    const nameParts = fullName.trim().split(" ");
-    const firstName = nameParts.length > 0 ? nameParts[0] : "";
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-
     // Gọi API đăng ký
     try {
       await register({
         email: email,
-        firstName: firstName || "User",
-        lastName: lastName || "Name",
+        fullName: fullName.trim(),
         phone: phone,
         password: password,
         role: role
