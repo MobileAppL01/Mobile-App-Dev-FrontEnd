@@ -27,14 +27,28 @@ export default function BookingConfirmScreen() {
     const { bookingInfo } = (route.params as any) || {};
 
     // Get user from store
+    // Get user from store
     const user = useAuthStore(state => state.user);
+    const fetchProfile = useAuthStore(state => state.fetchProfile);
 
-    const [name, setName] = useState(user?.fullName || user?.name || '');
+    const [name, setName] = useState(user?.fullName || '');
     const [phone, setPhone] = useState(user?.phone || '');
-
     const [note, setNote] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'VNPAY'>('CASH');
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Fetch latest profile when entering screen
+    React.useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    // Sync local state when user store updates
+    React.useEffect(() => {
+        if (user) {
+            setName(user.fullName || '');
+            setPhone(user.phone || '');
+        }
+    }, [user]);
 
     if (!bookingInfo) return null;
 

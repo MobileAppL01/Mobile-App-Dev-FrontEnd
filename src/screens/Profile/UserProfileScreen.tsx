@@ -75,7 +75,7 @@ export default function UserProfileScreen() {
     useEffect(() => {
         if (user) {
             setFormData({
-                fullName: user.fullName || user.name || "",
+                fullName: user.fullName || "",
                 email: user.email || "",
                 phone: user.phone || ""
             });
@@ -83,7 +83,7 @@ export default function UserProfileScreen() {
     }, [user]);
 
     const displayUser = {
-        name: user?.fullName || user?.name || "Người dùng",
+        name: user?.fullName || "Người dùng",
         email: user?.email || "",
         avatar: user?.avatar || "https://i.pravatar.cc/300",
         phone: user?.phone || "",
@@ -188,7 +188,6 @@ export default function UserProfileScreen() {
 
                         <View style={styles.headerInfo}>
                             <Text style={styles.headerTitle}>Hồ sơ của tôi</Text>
-                            <Text style={styles.headerName}>{displayUser.name}</Text>
                             {/* Phone removed as per previous user edit */}
                             <View style={styles.vipBadge}>
                                 <Text style={styles.vipText}>Thành viên vip</Text>

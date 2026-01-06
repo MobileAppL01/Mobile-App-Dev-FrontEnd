@@ -19,11 +19,13 @@ interface AuthState {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   setError: (error: string | null) => void;
+  updateUser: (data: Partial<UserData>) => void;
+  fetchProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       hasSeenOnboarding: false,
       isAuthenticated: false,
       user: null,
@@ -35,6 +37,38 @@ export const useAuthStore = create<AuthState>()(
 
       setError: (error) => set({ error }),
 
+      updateUser: (data) => set((state) => ({ user: state.user ? { ...state.user, ...data } : null })),
+
+      fetchProfile: async () => {
+        try {
+          const data = await authService.getMyProfile();
+          // Map backend response to frontend UserData
+          // Note: getMyProfile returns User entity or DTO?
+          // It returns User entity/dto from backend.
+          // Let's assume it matches structure or needs mapping.
+          // Backend `UserController.getMyProfile` returns `User`. 
+          // `User` entity has `id`, `firstName`, `lastName`, `email`, `phone`, `role`.
+          // We need to map it to `UserData`.
+
+          const currentUser = get().user;
+          const fullUserData: UserData = {
+            id: data.id?.toString() || currentUser?.id || "",
+            fullName: (data.lastName && data.firstName) ? `${data.firstName} ${data.lastName}` : (data.fullName || data.username || data.email),
+            email: data.email,
+            role: data.role?.name || currentUser?.role || "CLIENT", // backend UserRole is enum? or object?
+            // User from `userService.getUsers(id)` returns `User` entity.
+            // User entity has `role` as `UserRole` enum (PLAYER/OWNER). 
+            // It typically serializes as string "PLAYER" or "OWNER".
+
+            phone: data.phone || "",
+            avatar: data.avatar || currentUser?.avatar || "https://i.pravatar.cc/300",
+          };
+          set({ user: fullUserData });
+        } catch (error) {
+          console.log("Fetch profile failed", error);
+        }
+      },
+
       login: async (loginData) => {
         set({ isLoading: true, error: null });
         try {
@@ -45,8 +79,7 @@ export const useAuthStore = create<AuthState>()(
 
           const userData: UserData = {
             id: response.id.toString(),
-            name: response.fullName || response.username || response.email,
-            fullName: response.fullName || response.username, // Explicitly map fullName
+            fullName: response.fullName || response.username || response.email,
             email: response.email,
             role: userRole,
             phone: response.phone || "",

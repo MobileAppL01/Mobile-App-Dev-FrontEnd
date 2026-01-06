@@ -25,8 +25,7 @@ export interface AuthResponse {
 
 export interface UserData {
     id: string;
-    name: string;
-    fullName?: string; // Add this
+    fullName: string;
     email: string;
     role: string;
     avatar?: string;
