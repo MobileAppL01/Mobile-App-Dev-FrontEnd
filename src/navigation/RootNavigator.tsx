@@ -14,7 +14,7 @@ import OnboardingScreenThird from "../screens/Onboarding/OnboardingScreenThird";
 import PreLogin from "../screens/Onboarding/PreLogin";
 import SignUpScreen from "../screens/Authentication/SignUpScreen";
 import LoginScreen from "../screens/Authentication/LoginScreen";
-import RevenueScreen from "../screens/ManagingCourt/RevenueScreen";
+import RevenueScreen from "../screens/ManagingCourt/Revenue/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
 import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
 import OwnerTabs from "./OwnerTabs";

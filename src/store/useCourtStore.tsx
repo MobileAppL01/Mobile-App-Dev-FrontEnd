@@ -27,14 +27,17 @@ interface CourtStoreState {
   // State chứa dữ liệu
   locations: Location[]; // Danh sách các cơ sở
   currentCourts: any[];
+  promotions: any[]; // Giả sử bạn có mảng này trong store để hiển thị danh sách khuyến mãi
   isLoading: boolean;
   error: string | null;
 
   // Actions (Hành động)
+  fetchAll: () => Promise<void>;
   fetchLocations: () => Promise<void>;
   addLocation: (data: Location) => Promise<void>;
   createPromotion: (data: PromotionRequest) => Promise<void>;
-  getPromotion:(locationId: string) => Promise<void>;
+  getPromotion: (locationId: string) => Promise<void>;
+  deletePromotion: (locationId: string) => Promise<void>;
   deleteLocation: (locationId: string) => Promise<void>;
   fetchCourtByLocation: (locationId: string) => Promise<void>;
   addCourt: (locationId: string, name: string) => Promise<void>; // Thêm dòng này
@@ -48,10 +51,31 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
   // Khởi tạo giá trị mặc định
   locations: [],
   currentCourts: [],
+  promotions: [], // State lưu danh sách khuyến mãi
   isLoading: false,
   error: null,
 
   // --- ACTIONS ---
+
+  // 1. Lấy danh sách sân từ API
+  fetchAll: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await manageCourtService.getLocation();
+      const list = response.result || [];
+
+      set({
+        locations: list,
+        isLoading: false,
+      });
+    } catch (error: any) {
+      console.error("Fetch locations failed:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Lỗi khi tải danh sách sân.",
+      });
+    }
+  },
 
   // 1. Lấy danh sách sân từ API
   fetchLocations: async () => {
@@ -100,7 +124,7 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
   createPromotion: async (data: PromotionRequest) => {
     set({ isLoading: true, error: null });
     try {
-     const response = await manageCourtService.createPromotion(data);
+      const response = await manageCourtService.createPromotion(data);
 
       set({ isLoading: false });
     } catch (error: any) {
@@ -113,11 +137,10 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     }
   },
 
-  
   getPromotion: async (locationId: string) => {
     set({ isLoading: true, error: null });
     try {
-     const response = await manageCourtService.getPromotion(locationId);
+      const response = await manageCourtService.getPromotion(locationId);
 
       set({ isLoading: false });
     } catch (error: any) {
@@ -130,7 +153,33 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     }
   },
 
+   deletePromotion: async (promotionId: string) => {
+    set({ isLoading: true, error: null });
 
+    try {
+      // 1. Gọi API xóa
+      await manageCourtService.deletePromotion(promotionId);
+
+      // 2. Cập nhật State:
+      // SỬA LỖI: Phải filter trên danh sách 'promotions', không phải 'locations'
+      set((state) => ({
+        promotions: state.promotions.filter((item) => item.id !== promotionId),
+        isLoading: false,
+      }));
+      
+      // Mẹo: Nếu khuyến mãi nằm lồng trong location (ví dụ: location.promotions), 
+      // thì cách tốt nhất và an toàn nhất là gọi lại fetchLocations() ở đây:
+      // await get().fetchLocations(); 
+
+    } catch (error: any) {
+      console.error("Delete promotion failed:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Lỗi khi xóa khuyến mãi.",
+      });
+      throw error; // Ném lỗi ra để Component bắt được
+    }
+  },
 
   deleteLocation: async (locationId: string) => {
     // 1. Chỉ bật loading, KHÔNG được xóa locations: [] ở đây

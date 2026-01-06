@@ -3,19 +3,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 // import ManagerHomeScreen from '../screens/ManagingCourt/ManagerHomeScreen';
-import RevenueScreen from '../screens/ManagingCourt/RevenueScreen';
+import RevenueScreen from '../screens/ManagingCourt/Revenue/RevenueScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import ManagerNavigator from './ManagerNavigator';
 
 const NotificationScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
     <Text>Màn hình Thông báo</Text>
-  </View>
-);
-
-const CameraScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Camera Giám sát</Text>
   </View>
 );
 
@@ -26,8 +20,8 @@ const OwnerTabs = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#3B9AFF', // Màu xanh chủ đạo
-        tabBarInactiveTintColor: '#5E5E5E', // Màu xám khi không active
+        tabBarActiveTintColor: '#3B9AFF',
+        tabBarInactiveTintColor: '#5E5E5E',
         tabBarStyle: {
           height: 80,
           paddingBottom: 20,
@@ -35,7 +29,6 @@ const OwnerTabs = () => {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#F0F0F0',
-          // Đổ bóng (Shadow)
           elevation: 10,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -48,18 +41,18 @@ const OwnerTabs = () => {
           marginTop: 2,
         },
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          // 1. Khai báo kiểu 'any' để TypeScript không báo lỗi string
+          let iconName: any; 
 
           if (route.name === 'Sân của tôi') {
-            // Icon toà nhà/doanh nghiệp
             iconName = focused ? 'business' : 'business-outline';
-          } else if (route.name === 'Thống kê') {
-            // Icon biểu đồ
+          } else if (route.name === 'Doanh thu') {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'Thông báo') {
-            // Icon chuông
             iconName = focused ? 'notifications' : 'notifications-outline';
-          } else if (route.name === 'Thông Tin') {
+          } else if (route.name === 'Thông tin') { 
+            // 2. Lưu ý: Ở dưới Tab.Screen bạn đặt name="Thông tin" (chữ 't' thường)
+            // nên ở đây phải so sánh chính xác với 'Thông tin'
             iconName = focused ? 'person' : 'person-outline';
           }
 
@@ -69,7 +62,7 @@ const OwnerTabs = () => {
       })}
     >
       <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
-      <Tab.Screen name="Thống kê" component={RevenueScreen} />
+      <Tab.Screen name="Doanh thu" component={RevenueScreen} />
       <Tab.Screen name="Thông báo" component={NotificationScreen} />
       <Tab.Screen name="Thông tin" component={UserProfileScreen} />
     </Tab.Navigator>
