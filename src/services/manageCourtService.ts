@@ -4,7 +4,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Location } from "../store/useCourtStore";
 
 // Định nghĩa URL gốc (Hardcode luôn để tránh lỗi biến môi trường lúc debug)
-const BASE_URL =
+export const BASE_URL =
   "https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1";
 
 export interface PromotionRequest {
@@ -87,7 +87,7 @@ export const manageCourtService = {
 
     try {
       const response = await axios.get(
-        `${BASE_URL}/owner/promotion?locationId=${locationId}`,
+        `${BASE_URL}/owner/promotions?locationId=${locationId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -104,6 +104,25 @@ export const manageCourtService = {
         error.response?.status,
         error.response?.data
       );
+      throw error;
+    }
+  },
+
+  deletePromotion: async (promotionId: string) => {
+    const { token } = useAuthStore.getState();
+    try {
+      const response = await axios.delete(
+        `${BASE_URL}/owner/promotions/${promotionId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ API Error Delete Promotion:", error.response?.status);
       throw error;
     }
   },
@@ -219,6 +238,23 @@ export const manageCourtService = {
       return response.data;
     } catch (error: any) {
       console.error("❌ API Update Status Error:", error.response?.status);
+      throw error;
+    }
+  },
+
+  getBookingsByLocationAndDate: async (locationId: string | number, date: string) => {
+    // date format: YYYY-MM-DD
+    const { token } = useAuthStore.getState();
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/owner/bookings?locationId=${locationId}&date=${date}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Get bookings failed:", error);
       throw error;
     }
   },

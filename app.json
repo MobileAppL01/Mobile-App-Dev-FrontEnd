@@ -53,7 +53,8 @@
           "organization": "hcmut-nu"
         }
       ],
-      "expo-build-properties"
+      "expo-build-properties",
+      "@react-native-community/datetimepicker"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
