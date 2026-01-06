@@ -53,13 +53,9 @@ export const useAuthStore = create<AuthState>()(
           const currentUser = get().user;
           const fullUserData: UserData = {
             id: data.id?.toString() || currentUser?.id || "",
-            fullName: (data.lastName && data.firstName) ? `${data.firstName} ${data.lastName}` : (data.fullName || data.username || data.email),
+            fullName: data.fullName || data.email,
             email: data.email,
-            role: data.role?.name || currentUser?.role || "CLIENT", // backend UserRole is enum? or object?
-            // User from `userService.getUsers(id)` returns `User` entity.
-            // User entity has `role` as `UserRole` enum (PLAYER/OWNER). 
-            // It typically serializes as string "PLAYER" or "OWNER".
-
+            role: data.role || currentUser?.role || "CLIENT",
             phone: data.phone || "",
             avatar: data.avatar || currentUser?.avatar || "https://i.pravatar.cc/300",
           };

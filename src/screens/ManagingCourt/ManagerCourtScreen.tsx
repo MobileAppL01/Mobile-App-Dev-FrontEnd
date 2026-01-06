@@ -183,6 +183,14 @@ const ManagerCourtsScreen = () => {
             style={styles.searchInput}
           />
         </View>
+
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => (navigation as any).navigate("OwnerReviewManager", { locationId: cluster.id, locationName: cluster.name })}
+        >
+          <Ionicons name="star-half-outline" size={28} color="#FFA500" />
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.iconBtn}
           onPress={() => setModalVisible(true)}
@@ -330,7 +338,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1 },
   iconBtn: { marginLeft: 10 },
-  
+
   // CARD STYLES
   card: {
     flexDirection: "row",
@@ -362,7 +370,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontWeight: "bold", fontSize: 16 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusText: { color: "white", fontSize: 10, fontWeight: "bold" },
-  
+
   // Switch Styles
   switchRow: {
     flexDirection: "row",

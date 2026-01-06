@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
         left: 20,
         right: 20,
         alignItems: 'center', // Center content horizontally
-        zIndex: 9999,
+        zIndex: 100000,
         // No conditional render from store means we need to ensure it doesn't block touches when hidden
     },
     content: {

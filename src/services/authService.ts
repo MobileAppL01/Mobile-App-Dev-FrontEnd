@@ -19,17 +19,24 @@ export const authService = {
     },
 
     forgotPassword: async (email: string) => {
-        const response = await axiosInstance.post('/auth/forgot-password', { email });
+        const response = await axiosInstance.post('/auth/forgot-password/send-otp', { email });
         return response.data;
     },
 
     verifyOtp: async (email: string, otp: string) => {
-        const response = await axiosInstance.post('/auth/verify-otp', { email, otp });
+        const response = await axiosInstance.post('/auth/forgot-password/verify-otp', { email, otp });
         return response.data;
     },
 
     resetPassword: async (data: any) => {
-        const response = await axiosInstance.post('/auth/reset-password', data);
+        // data should be { email, otp, newPassword }
+        const response = await axiosInstance.post('/auth/reset-password-otp', data);
+        return response.data;
+    },
+
+    changePassword: async (data: any) => {
+        // data should be { oldPassword, newPassword }
+        const response = await axiosInstance.post('/change-password', data);
         return response.data;
     },
 

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { reviewService } from '../../services/reviewService';
 
 const { width } = Dimensions.get('window');
 
@@ -24,8 +25,8 @@ export default function CourtDetailScreen() {
     const courtData = {
         ...court,
         phone: "0123456789",
-        rating: 4.8,
-        reviewCount: 100,
+        rating: court?.rating || 4.8,
+        reviewCount: court?.totalReviews || 100,
         website: "anhnghiacourt.com",
         description: "Sân Cầu Lông Anh Nghĩa là địa điểm lý tưởng cho những ai yêu thích bộ môn cầu lông. Sân được thiết kế đạt tiêu chuẩn thi đấu với mặt sân gỗ chất lượng cao, hệ thống đèn LED sáng đều, không gây chói mắt...",
         images: [
@@ -113,9 +114,6 @@ export default function CourtDetailScreen() {
                     </View>
 
                     {/* Info Section */}
-                    {/* ... (Existing Info Section logic unchanged, keeping for context in replacement if we need to match large block, but assuming standard flow) ... */}
-                    {/* Just matching the rest of the render until the end to insert footer */}
-
                     <View style={styles.infoContainer}>
                         <View style={styles.infoRow}>
                             <Ionicons name="location-sharp" size={16} color="#3B9AFF" style={{ marginTop: 2 }} />
@@ -134,12 +132,12 @@ export default function CourtDetailScreen() {
                             <Text style={styles.infoText}>{courtData.phone}</Text>
                         </View>
 
-                        <TouchableOpacity style={styles.ratingRow} onPress={() => navigation.navigate("ReviewScreen" as never)}>
-                            <View style={styles.ratingBadge}>
-                                <Ionicons name="star" size={12} color="#FFD700" />
-                                <Text style={styles.ratingText}>{courtData.rating}</Text>
-                            </View>
-                            <Text style={styles.reviewText}>| {courtData.reviewCount} đánh giá</Text>
+                        <TouchableOpacity
+                            style={styles.seeReviewsBtn}
+                            onPress={() => navigation.navigate("ReviewScreen" as never, { locationId: courtData.id } as never)}
+                        >
+                            <Text style={styles.seeReviewsText}>Xem đánh giá chi tiết</Text>
+                            <Ionicons name="chevron-forward" size={16} color="#3B9AFF" />
                         </TouchableOpacity>
 
                         <View style={styles.linkRow}>
@@ -240,6 +238,102 @@ export default function CourtDetailScreen() {
                                         <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
                                     </View>
                                 </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* KHÁCH HÀNG */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionHeaderBlue}>KHÁCH HÀNG</Text>
+                        <View style={styles.complexTable}>
+                            {/* Header */}
+                            <View style={styles.complexHeader}>
+                                <Text style={[styles.complexHeaderText, { flex: 1.2 }]}>Thứ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1.5 }]}>Khung giờ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Cố định</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Vãng lai</Text>
+                            </View>
+                            {/* Body */}
+                            <View style={{ flexDirection: 'row' }}>
+                                {/* Right Block */}
+                                <View style={{ flex: 4.7 }}>
+                                    {/* Row 1: Mac dinh */}
+                                    <View style={styles.innerRow}>
+                                        <View style={[styles.complexCellContainer, { flex: 1.2 }]}><Text style={styles.complexCellText}>Mặc định</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>5h–24h</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                    </View>
+                                    {/* Row 2: T2-T6 */}
+                                    <View style={styles.innerRow}>
+                                        <View style={[styles.complexCellContainer, { flex: 1.2, borderBottomWidth: 0 }]}><Text style={styles.complexCellText}>T2 – T6</Text></View>
+                                        <View style={{ flex: 3.5, borderLeftWidth: 1, borderColor: '#E0E0E0' }}>
+                                            <View style={styles.innerRow}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>5h–16h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>30.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>30.000 đ</Text></View>
+                                            </View>
+                                            <View style={styles.innerRow}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>16h–21h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>90.000 đ</Text></View>
+                                            </View>
+                                            <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>21h–24h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                    {/* Row 3: T7-CN */}
+                                    <View style={[styles.innerRow, { borderTopWidth: 1, borderColor: '#E0E0E0', borderBottomWidth: 0 }]}>
+                                        <View style={[styles.complexCellContainer, { flex: 1.2, borderBottomWidth: 0 }]}><Text style={styles.complexCellText}>T7 – CN</Text></View>
+                                        <View style={{ flex: 3.5, borderLeftWidth: 1, borderColor: '#E0E0E0' }}>
+                                            <View style={styles.innerRow}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>5h–9h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
+                                            </View>
+                                            <View style={styles.innerRow}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>9h–16h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>60.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
+                                            </View>
+                                            <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
+                                                <View style={[styles.complexCellContainer, { flex: 1.5 }]}><Text style={styles.complexCellText}>16h–21h</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>90.000 đ</Text></View>
+                                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>100.000 đ</Text></View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* HSSV */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionHeaderBlue}>HSSV</Text>
+                        <View style={styles.complexTable}>
+                            <View style={styles.complexHeader}>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Thứ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Khung giờ</Text>
+                                <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Giá</Text>
+                            </View>
+                            <View style={styles.complexRow}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>Mặc định</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>—</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>0 đ</Text></View>
+                            </View>
+                            <View style={styles.complexRow}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>T2 – T6</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–24h</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>50.000 đ</Text></View>
+                            </View>
+                            <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>T7 – CN</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–24h</Text></View>
+                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>60.000 đ</Text></View>
                             </View>
                         </View>
                     </View>
@@ -546,6 +640,19 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0',
         alignItems: 'center',
+    },
+    seeReviewsBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        marginVertical: 4,
+    },
+    seeReviewsText: {
+        fontSize: 14,
+        color: '#3B9AFF',
+        fontWeight: 'bold',
+        marginRight: 6,
+        textDecorationLine: 'underline',
     },
     stickyFooter: {
         padding: 16,

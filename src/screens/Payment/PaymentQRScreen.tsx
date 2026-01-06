@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 
 const { width } = Dimensions.get('window');
 
@@ -54,17 +55,23 @@ export default function PaymentQRScreen() {
 
     const handleSaveInvoice = async () => {
         try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Quyền truy cập", "Ứng dụng cần quyền truy cập thư viện ảnh để lưu hóa đơn.");
+                return;
+            }
+
             setIsSharing(true);
             const uri = await captureRef(viewShotRef, {
                 format: "png",
                 quality: 0.8,
             });
 
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri);
-            } else {
-                Alert.alert("Đã lưu", "Đã lưu ảnh hóa đơn vào thư viện.");
-            }
+            const asset = await MediaLibrary.createAssetAsync(uri);
+            // On Android, creating asset might automatically add to gallery. On iOS too.
+            // Optionally create album: await MediaLibrary.createAlbumAsync("Bookinton", asset, false);
+
+            Alert.alert("Thành công", "Đã lưu hóa đơn vào thư viện ảnh.");
         } catch (e) {
             console.error(e);
             Alert.alert("Lỗi", "Không thể lưu hóa đơn.");

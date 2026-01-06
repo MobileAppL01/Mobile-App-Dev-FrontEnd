@@ -7,11 +7,7 @@ import RevenueScreen from '../screens/ManagingCourt/RevenueScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import ManagerNavigator from './ManagerNavigator';
 
-const NotificationScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Màn hình Thông báo</Text>
-  </View>
-);
+import OwnerNotificationScreen from '../screens/ManagingCourt/OwnerNotificationScreen';
 
 const CameraScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -48,7 +44,7 @@ const OwnerTabs = () => {
           marginTop: 2,
         },
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          let iconName: any;
 
           if (route.name === 'Sân của tôi') {
             // Icon toà nhà/doanh nghiệp
@@ -70,8 +66,8 @@ const OwnerTabs = () => {
     >
       <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
       <Tab.Screen name="Thống kê" component={RevenueScreen} />
-      <Tab.Screen name="Thông báo" component={NotificationScreen} />
-      <Tab.Screen name="Thông tin" component={UserProfileScreen} />
+      <Tab.Screen name="Thông báo" component={OwnerNotificationScreen} />
+      <Tab.Screen name="Thông Tin" component={UserProfileScreen} />
     </Tab.Navigator>
   );
 };

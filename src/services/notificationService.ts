@@ -10,7 +10,7 @@ export interface NotificationItem {
 }
 
 export const notificationService = {
-    // Get all notifications
+    // Get all notifications for Player
     getNotifications: async (): Promise<NotificationItem[]> => {
         try {
             const response = await axiosInstance.get('/notifications');
@@ -31,6 +31,30 @@ export const notificationService = {
         } catch (error) {
             console.error("Error fetching notifications:", error);
             // Return empty array instead of mock data to avoid confusion
+            return [];
+        }
+    },
+
+    // Get all notifications for Owner
+    getOwnerNotifications: async (): Promise<NotificationItem[]> => {
+        try {
+            const response = await axiosInstance.get('/owner/notifications');
+            const data = response.data;
+
+            if (!Array.isArray(data)) {
+                return [];
+            }
+
+            return data.map((item: any) => ({
+                id: item.notificationId?.toString(),
+                title: getTitleFromType(item.type),
+                message: item.briefNotification,
+                type: item.type,
+                isRead: item.notificationIsRead,
+                createdAt: item.createdAt
+            }));
+        } catch (error) {
+            console.error("Error fetching owner notifications:", error);
             return [];
         }
     },

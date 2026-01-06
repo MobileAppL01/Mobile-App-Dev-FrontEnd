@@ -1,11 +1,7 @@
-import axios from "axios"; // Import trực tiếp axios
+import axiosInstance from './axiosInstance';
 import { useAuthStore } from "../store/useAuthStore";
 // Hãy đảm bảo đường dẫn import type Location đúng với file bạn định nghĩa
 import { Location } from "../store/useCourtStore";
-
-// Định nghĩa URL gốc (Hardcode luôn để tránh lỗi biến môi trường lúc debug)
-const BASE_URL =
-  "https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1";
 
 export interface PromotionRequest {
   locationId: number;
@@ -19,14 +15,8 @@ export interface PromotionRequest {
 
 export const manageCourtService = {
   getLocation: async () => {
-    const { token } = useAuthStore.getState();
     try {
-      const response = await axios.get(`${BASE_URL}/owner/locations`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Gắn thủ công ở đây
-        },
-      });
+      const response = await axiosInstance.get(`/owner/locations`);
       return response.data;
     } catch (error: any) {
       console.error(
@@ -39,15 +29,8 @@ export const manageCourtService = {
   },
 
   addLocation: async (data: Location) => {
-    const { token } = useAuthStore.getState();
-
     try {
-      const response = await axios.post(`${BASE_URL}/owner/locations`, data, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axiosInstance.post(`/owner/locations`, data);
       return response.data;
     } catch (error: any) {
       console.error(
@@ -60,17 +43,10 @@ export const manageCourtService = {
   },
 
   createPromotion: async (data: PromotionRequest) => {
-    const { token } = useAuthStore.getState();
-
     try {
-      const response = await axios.post(`${BASE_URL}/owner/promotions`, data, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axiosInstance.post(`/owner/promotions`, data);
 
-      console.log("✅ Promotion Created:", response.data);
+      console.log("Promotion Created:", response.data);
       return response.data;
     } catch (error: any) {
       console.error(
@@ -83,24 +59,16 @@ export const manageCourtService = {
   },
 
   getPromotion: async (locationId: string) => {
-    const { token } = useAuthStore.getState();
-
     try {
-      const response = await axios.get(
-        `${BASE_URL}/owner/promotion?locationId=${locationId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Endpoint is /owner/promotions (plural)
+      const response = await axiosInstance.get(`/owner/promotions`, {
+        params: { locationId }
+      });
 
-      console.log("✅ Promotion Created:", response.data);
       return response.data;
     } catch (error: any) {
       console.error(
-        "❌ Create Promotion Error:",
+        "❌ Get Promotion Error:",
         error.response?.status,
         error.response?.data
       );
@@ -109,18 +77,8 @@ export const manageCourtService = {
   },
 
   deleteLocation: async (locationId: string) => {
-    const { token } = useAuthStore.getState();
     try {
-      const response = await axios.delete(
-        `${BASE_URL}/owner/locations/${locationId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const response = await axiosInstance.delete(`/owner/locations/${locationId}`);
       return response.data;
     } catch (error: any) {
       console.error("❌ API Error:", error.response?.status);
@@ -129,18 +87,8 @@ export const manageCourtService = {
   },
 
   getAllCourtByLocationId: async (locationId: string) => {
-    const { token } = useAuthStore.getState();
     try {
-      const response = await axios.get(
-        `${BASE_URL}/owner/locations/${locationId}/courts`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const response = await axiosInstance.get(`/owner/locations/${locationId}/courts`);
       return response.data;
     } catch (error: any) {
       console.error("❌ API Error:", error.response?.status);
@@ -149,8 +97,6 @@ export const manageCourtService = {
   },
 
   addCourt: async (locationId: string, courtName: string) => {
-    const { token } = useAuthStore.getState();
-
     // Body request theo yêu cầu
     const payload = {
       name: courtName,
@@ -158,15 +104,9 @@ export const manageCourtService = {
     };
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/owner/locations/${locationId}/courts`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axiosInstance.post(
+        `/owner/locations/${locationId}/courts`,
+        payload
       );
       return response.data;
     } catch (error: any) {
@@ -180,18 +120,8 @@ export const manageCourtService = {
   },
 
   deleteCourt: async (courtId: string) => {
-    const { token } = useAuthStore.getState();
     try {
-      const response = await axios.delete(
-        `${BASE_URL}/owner/courts/${courtId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const response = await axiosInstance.delete(`/owner/courts/${courtId}`);
       return response.data;
     } catch (error: any) {
       console.error("❌ API Error:", error.response?.status);
@@ -200,20 +130,12 @@ export const manageCourtService = {
   },
 
   updateCourtStatus: async (courtId: string, courtStatus: string) => {
-    const { token } = useAuthStore.getState();
     try {
       // Axios.put(url, body, config)
       // Vì status nằm ở query param rồi, nên body ta để object rỗng {}
-      const response = await axios.patch(
-        `${BASE_URL}/owner/courts/${courtId}/status?status=${courtStatus}`,
-        {}, // <--- Body rỗng
-        {
-          // <--- Config (Headers) nằm ở đây
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axiosInstance.patch(
+        `/owner/courts/${courtId}/status?status=${courtStatus}`,
+        {} // Body rỗng
       );
 
       return response.data;

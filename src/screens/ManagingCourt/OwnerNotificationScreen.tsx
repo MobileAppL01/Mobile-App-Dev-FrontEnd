@@ -84,25 +84,25 @@ const NotificationItem = ({ item, onPress }: NotificationItemProps) => {
     );
 };
 
-const NotificationScreen = () => {
+const OwnerNotificationScreen = () => {
     const navigation = useNavigation();
-    const { notifications, unreadCount, isLoading, fetchNotifications, markRead, markAllRead } = useInboxStore();
+    const { notifications, unreadCount, isLoading, fetchOwnerNotifications, markRead, markAllRead } = useInboxStore();
 
     useEffect(() => {
-        fetchNotifications();
+        fetchOwnerNotifications();
     }, []);
 
     const handlePressItem = (item: NotificationItemType) => {
         if (!item.isRead) {
             markRead(item.id);
         }
-        // Navigate if needed
+        // Navigate if needed, e.g., to Booking Detail
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Thông báo</Text>
+                <Text style={styles.headerTitle}>Thông báo (Chủ sân)</Text>
                 {unreadCount > 0 && (
                     <TouchableOpacity onPress={markAllRead} style={styles.readAllBtn}>
                         <Ionicons name="checkmark-done-outline" size={20} color={COLORS.primary} />
@@ -119,7 +119,7 @@ const NotificationScreen = () => {
                 )}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={fetchNotifications} colors={[COLORS.primary]} />
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchOwnerNotifications} colors={[COLORS.primary]} />
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
@@ -242,4 +242,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default NotificationScreen;
+export default OwnerNotificationScreen;

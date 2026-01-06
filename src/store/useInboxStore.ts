@@ -7,6 +7,7 @@ interface InboxState {
     isLoading: boolean;
 
     fetchNotifications: () => Promise<void>;
+    fetchOwnerNotifications: () => Promise<void>;
     markRead: (id: string) => Promise<void>;
     markAllRead: () => Promise<void>;
 }
@@ -20,6 +21,17 @@ export const useInboxStore = create<InboxState>((set, get) => ({
         set({ isLoading: true });
         try {
             const data = await notificationService.getNotifications();
+            const unread = data.filter(n => !n.isRead).length;
+            set({ notifications: data, unreadCount: unread, isLoading: false });
+        } catch (error) {
+            set({ isLoading: false });
+        }
+    },
+
+    fetchOwnerNotifications: async () => {
+        set({ isLoading: true });
+        try {
+            const data = await notificationService.getOwnerNotifications();
             const unread = data.filter(n => !n.isRead).length;
             set({ notifications: data, unreadCount: unread, isLoading: false });
         } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,50 +6,58 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Ionicons,
-  FontAwesome5,
-  MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import { Header } from "../../components/Header";
+import { bookingService } from "../../services/bookingService";
 
 const { width } = Dimensions.get("window");
 
-// --- Mock Data: Lịch sử đặt sân ---
-const BOOKINGS = [
-  {
-    id: "1",
-    name: "Ly Thanh Nhat Quang",
-    date: "17 tháng 12 năm 2025",
-    time: "10:00 đến 12:00",
-    price: "100,000 VNĐ",
-  },
-  {
-    id: "2",
-    name: "Nguyen Van A",
-    date: "17 tháng 12 năm 2025",
-    time: "13:00 đến 14:00",
-    price: "100,000 VNĐ",
-  },
-  {
-    id: "3",
-    name: "Tran Thi B",
-    date: "17 tháng 12 năm 2025",
-    time: "15:00 đến 17:00",
-    price: "100,000 VNĐ",
-  },
-  {
-    id: "4",
-    name: "Le Van C",
-    date: "17 tháng 12 năm 2025",
-    time: "18:00 đến 20:00",
-    price: "100,000 VNĐ",
-  },
-];
-
 const RevenueScreen = () => {
-  const [selectedDate, setSelectedDate] = useState("Chọn ngày/ tháng");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [revenueStats, setRevenueStats] = useState<any>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedDate]);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const month = selectedDate.getMonth() + 1;
+      const year = selectedDate.getFullYear();
+
+      // Fetch Stats
+      const stats = await bookingService.getRevenueStatistics(month, year);
+      setRevenueStats(stats);
+
+      // Fetch Bookings (For the whole month or just recent? The UI suggests a list. Let's fetch for the month)
+      // Note: Backend getBookings supports filtering by date (specific day) but not range yet unless we update backend.
+      // Assuming getOwnerBookings returns list. We might need to filter client side or just show all recent.
+      // For now, let's fetch list without filters to see some data, or filter by 'CONFIRMED' status if desired.
+      const bookingsData = await bookingService.getOwnerBookings();
+      // Filter bookings for this month? Or just show what API returns.
+      // Let's rely on API.
+      setBookings(bookingsData);
+
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Lỗi", "Không thể tải dữ liệu doanh thu");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
 
   const renderBookingItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
@@ -61,7 +69,7 @@ const RevenueScreen = () => {
           color="black"
           style={styles.icon}
         />
-        <Text style={styles.cardTextBold}>{item.name}</Text>
+        <Text style={styles.cardTextBold}>{item.courtName || "Sân cầu lông"}</Text>
       </View>
 
       {/* Ngày giờ */}
@@ -73,7 +81,7 @@ const RevenueScreen = () => {
           style={styles.icon}
         />
         <Text style={styles.cardText}>
-          {item.date} | Từ {item.time}
+          {item.bookingDate} | {item.startTime ? item.startTime.substring(0, 5) : '00:00'} - {item.endTime ? item.endTime.substring(0, 5) : '00:00'}
         </Text>
       </View>
 
@@ -85,94 +93,71 @@ const RevenueScreen = () => {
           color="black"
           style={styles.icon}
         />
-        <Text style={styles.cardText}>{item.price}</Text>
+        <Text style={styles.cardText}>{formatCurrency(item.totalPrice)}</Text>
       </View>
 
       {/* Badge Thanh toán */}
-      <View style={styles.statusBadge}>
-        <Text style={styles.statusText}>Đã thanh toán</Text>
+      <View style={[styles.statusBadge, item.status !== 'CONFIRMED' && { backgroundColor: '#f1c40f' }]}>
+        <Text style={styles.statusText}>{item.status === 'CONFIRMED' ? 'Đã thanh toán' : item.status}</Text>
       </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Banner */}
-      <View style={styles.blueHeader}>
-        <Text style={styles.headerText}>
-          Find and book your badminton court easily - Anytime, Anywhere!
-        </Text>
-      </View>
+      <Header />
 
       <View style={styles.body}>
-        {/* Title */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.welcomeText}>
-            Chào mừng bạn đến với{" "}
-            <Text style={{ fontWeight: "bold" }}>BOOKINGTON</Text>
-          </Text>
-          <Text style={styles.courtTitle}>Sân số 1</Text>
-        </View>
 
         {/* Filter Bar */}
         <View style={styles.filterBar}>
           <TouchableOpacity style={styles.datePicker}>
             <Ionicons name="search" size={20} color="black" />
             <Text style={{ marginLeft: 10, color: "#555", flex: 1 }}>
-              {selectedDate}
+              Tháng {selectedDate.getMonth() + 1}/{selectedDate.getFullYear()}
             </Text>
             <Ionicons name="calendar-outline" size={22} color="black" />
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginLeft: 15 }}>
-            <Ionicons name="filter" size={28} color="#3B9AFF" />
+          <TouchableOpacity style={{ marginLeft: 15 }} onPress={fetchData}>
+            <Ionicons name="refresh" size={28} color="#3B9AFF" />
           </TouchableOpacity>
         </View>
 
         {/* Danh sách Booking */}
-        <FlatList
-          data={BOOKINGS}
-          renderItem={renderBookingItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 150 }} // Padding bottom để không bị Footer che
-          showsVerticalScrollIndicator={false}
-        />
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#3B9AFF" style={{ marginTop: 20 }} />
+        ) : (
+          <FlatList
+            data={bookings}
+            renderItem={renderBookingItem}
+            keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
+            contentContainerStyle={{ paddingBottom: 150 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>Không có dữ liệu</Text>}
+          />
+        )}
       </View>
 
       {/* Footer: Tổng doanh thu */}
       <View style={styles.footer}>
         <View style={styles.footerRow}>
           <Text style={styles.footerTitle}>Tổng doanh thu:</Text>
-          <Text style={styles.footerAmount}>1,200,000 VNĐ</Text>
+          <Text style={styles.footerAmount}>
+            {revenueStats ? formatCurrency(revenueStats.totalRevenue) : '0 đ'}
+          </Text>
         </View>
         <View style={styles.footerRow}>
-          <Text style={styles.footerDate}>Ngày 17/12/2025</Text>
+          <Text style={styles.footerDate}>Tháng {selectedDate.getMonth() + 1}</Text>
           <Text style={styles.footerIncrease}>
-            + 500,000 VNĐ/ <Text style={{ fontSize: 12 }}>16-12</Text>
+            {bookings.length} đơn đặt
           </Text>
         </View>
 
         {/* Pagination (Mock) */}
         <View style={styles.pagination}>
-          <View style={[styles.pageBtn, { backgroundColor: "#ccc" }]}>
-            <Ionicons name="chevron-back" size={16} />
-          </View>
+          {/* Simple Pagination Mock */}
           <View style={[styles.pageBtn, styles.activePage]}>
             <Text style={{ fontWeight: "bold" }}>1</Text>
-          </View>
-          <View style={styles.pageBtn}>
-            <Text>2</Text>
-          </View>
-          <View style={[styles.pageBtn, { borderWidth: 0 }]}>
-            <Text>...</Text>
-          </View>
-          <View style={styles.pageBtn}>
-            <Text>9</Text>
-          </View>
-          <View style={styles.pageBtn}>
-            <Text>10</Text>
-          </View>
-          <View style={styles.pageBtn}>
-            <Ionicons name="chevron-forward" size={16} />
           </View>
         </View>
       </View>
