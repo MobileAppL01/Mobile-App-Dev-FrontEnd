@@ -101,9 +101,7 @@ const CourtItem: React.FC<CourtItemProps> = ({
           {/* --- CỘT TRÁI: HÌNH ẢNH --- */}
           <View style={styles.imageContainer}>
             <Image
-              source={{
-                uri: item.image || "https://img.freepik.com/free-photo/badminton-court-shuttlecock_1150-17937.jpg",
-              }}
+              source={require("../../../assets/images/court4.jpg")}
               style={styles.courtImage}
             />
             <View style={styles.imageOverlayIcons}>
