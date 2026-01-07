@@ -177,7 +177,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
           activeOpacity={0.9}
         >
           <Image
-            source={{ uri: item.image || "https://via.placeholder.com/150" }}
+            source={require("../../../assets/images/location.jpg")}
             style={styles.clusterImage}
           />
 

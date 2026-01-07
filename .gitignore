@@ -67,3 +67,5 @@ build/
 # Android
 *.apk
 *.aab
+
+.env.local
