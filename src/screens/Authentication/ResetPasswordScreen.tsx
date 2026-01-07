@@ -24,7 +24,7 @@ type ResetPasswordProps = StackScreenProps<RootStackParamList, "ResetPassword">;
 
 const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
     const { email } = route.params;
-    const [otp, setOtp] = useState(["", "", "", ""]);
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +53,7 @@ const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
         newOtp[index] = value;
         setOtp(newOtp);
 
-        if (value && index < 3) {
+        if (value && index < 5) {
             otpInputs.current[index + 1]?.focus();
         }
     };
@@ -66,8 +66,8 @@ const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
 
     const handleResetPassword = async () => {
         const otpValue = otp.join("");
-        if (otpValue.length < 4) {
-            showNotification("Vui lòng nhập đủ mã OTP", "error");
+        if (otpValue.length < 6) {
+            showNotification("Vui lòng nhập đủ mã OTP (6 số)", "error");
             return;
         }
         if (!password || !confirmPassword) {
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
         alignSelf: "center",
     },
     otpInput: {
-        width: 60,
+        width: 45,
         height: 60,
         borderWidth: 1,
         borderColor: COLORS.grayBorder,

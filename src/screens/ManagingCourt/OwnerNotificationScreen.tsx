@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import { Swipeable } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, Image, RefreshControl, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInboxStore } from '../../store/useInboxStore';
@@ -8,6 +9,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NotificationItem as NotificationItemType } from '../../services/notificationService';
 
 const { width } = Dimensions.get('window');
+
+import React, { useEffect } from 'react';
+
+// ... (other imports are preserved by partial update logic if I only target the COMPONENT, but here I am fixing the top file too? No, I will fix top imports separately or restart file content? No, target specific lines.)
 
 interface NotificationItemProps {
     item: NotificationItemType;
@@ -58,36 +63,47 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
         }
     };
 
+    const renderRightActions = () => {
+        return (
+            <TouchableOpacity
+                style={styles.deleteAction}
+                onPress={() => onDelete(item.id)}
+            >
+                <Ionicons name="trash-outline" size={24} color="white" />
+            </TouchableOpacity>
+        );
+    };
+
     return (
-        <TouchableOpacity
-            style={[styles.itemContainer, !item.isRead && styles.unreadItem]}
-            onPress={() => onPress(item)}
-            activeOpacity={0.7}
-        >
-            <View style={[styles.iconBox, { backgroundColor: getIconBg() }]}>
-                {getIcon()}
-            </View>
-            <View style={styles.textContainer}>
-                <View style={styles.itemHeader}>
-                    <Text style={[styles.itemTitle, !item.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
-                        {item.title}
-                    </Text>
-                    <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
-                    {/* Delete Icon */}
-                    <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteBtn}>
-                        <Ionicons name="close" size={16} color="#999" />
-                    </TouchableOpacity>
+        <Swipeable renderRightActions={renderRightActions} containerStyle={styles.swipeableWrapper}>
+            <TouchableOpacity
+                style={[styles.itemContainer, !item.isRead && styles.unreadItem]}
+                onPress={() => onPress(item)}
+                activeOpacity={0.7}
+            >
+                <View style={[styles.iconBox, { backgroundColor: getIconBg() }]}>
+                    {getIcon()}
                 </View>
-                <Text style={styles.itemMessage} numberOfLines={2}>
-                    {item.message}
-                </Text>
-            </View>
-            {!item.isRead && (
-                <View style={styles.unreadDot} />
-            )}
-        </TouchableOpacity>
+                <View style={styles.textContainer}>
+                    <View style={styles.itemHeader}>
+                        <Text style={[styles.itemTitle, !item.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
+                            {item.title}
+                        </Text>
+                        <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
+                    </View>
+                    <Text style={styles.itemMessage} numberOfLines={2}>
+                        {item.message}
+                    </Text>
+                </View>
+                {!item.isRead && (
+                    <View style={styles.unreadDot} />
+                )}
+            </TouchableOpacity>
+        </Swipeable>
     );
 };
+
+import { Header } from '../../components/Header';
 
 const OwnerNotificationScreen = () => {
     const navigation = useNavigation();
@@ -120,8 +136,9 @@ const OwnerNotificationScreen = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <Header />
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Thông báo (Chủ sân)</Text>
+                <Text style={styles.headerTitle}>Thông báo</Text>
                 {notifications.length > 0 && (
                     <TouchableOpacity onPress={handleDeleteAll} style={styles.readAllBtn}>
                         <Ionicons name="trash-outline" size={20} color={COLORS.error} />
@@ -129,6 +146,7 @@ const OwnerNotificationScreen = () => {
                     </TouchableOpacity>
                 )}
             </View>
+            {/* ... List ... */}
 
             <FlatList
                 data={notifications}
@@ -195,7 +213,10 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         padding: 16,
         borderRadius: 16,
-        marginBottom: 12,
+        // marginBottom: 12, // Handle margin in Swipeable container or wrapper?
+        // Actually, Swipeable might need a wrapper logic for spacing if itemContainer has shadow.
+        // Let's keep margin but Swipeable background is usually transparent.
+        marginBottom: 0, // Reset margin here, move to wrapper
         alignItems: 'flex-start',
         // Shadow
         shadowColor: "#000",
@@ -203,6 +224,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 5,
         elevation: 2,
+    },
+    // Wrapper for Swipeable to handle margin
+    swipeableWrapper: {
+        marginBottom: 12,
+        backgroundColor: 'transparent',
+        overflow: 'visible' // Ensure shadow visible?
     },
     unreadItem: {
         backgroundColor: '#F0F9FF', // Subtle highlight for unread
@@ -259,9 +286,15 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#9CA3AF',
     },
-    deleteBtn: {
-        padding: 4,
-        marginLeft: 8
+    deleteAction: {
+        backgroundColor: COLORS.error,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        borderTopRightRadius: 16,
+        borderBottomRightRadius: 16,
+        // marginBottom: 12, // Match item margin?
     }
 });
 

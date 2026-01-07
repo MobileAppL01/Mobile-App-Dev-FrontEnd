@@ -6,12 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import RevenueScreen from '../screens/ManagingCourt/Revenue/RevenueScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import ManagerNavigator from './ManagerNavigator';
-
 import OwnerNotificationScreen from '../screens/ManagingCourt/OwnerNotificationScreen';
+import { useInboxStore } from '../store/useInboxStore';
 
 const Tab = createBottomTabNavigator();
 
 const OwnerTabs = () => {
+  // ...
+  // Get unread count
+  const unreadCount = useInboxStore(state => state.unreadCount);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -19,6 +23,7 @@ const OwnerTabs = () => {
         tabBarActiveTintColor: '#3B9AFF',
         tabBarInactiveTintColor: '#5E5E5E',
         tabBarStyle: {
+          // ... same styles
           height: 80,
           paddingBottom: 20,
           paddingTop: 10,
@@ -37,6 +42,7 @@ const OwnerTabs = () => {
           marginTop: 2,
         },
         tabBarIcon: ({ focused, color, size }) => {
+          // ... same icon logic
           let iconName: any;
 
           if (route.name === 'Sân của tôi') {
@@ -46,19 +52,22 @@ const OwnerTabs = () => {
           } else if (route.name === 'Thông báo') {
             iconName = focused ? 'notifications' : 'notifications-outline';
           } else if (route.name === 'Thông Tin') {
-            // 2. Lưu ý: Ở dưới Tab.Screen bạn đặt name="Thông tin" (chữ 't' thường)
-            // nên ở đây phải so sánh chính xác với 'Thông tin'
             iconName = focused ? 'person' : 'person-outline';
           }
 
-          // Render Icon
           return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
       <Tab.Screen name="Thống kê" component={RevenueScreen} />
-      <Tab.Screen name="Thông báo" component={OwnerNotificationScreen} />
+      <Tab.Screen
+        name="Thông báo"
+        component={OwnerNotificationScreen}
+        options={{
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined
+        }}
+      />
       <Tab.Screen name="Thông Tin" component={UserProfileScreen} />
     </Tab.Navigator>
   );

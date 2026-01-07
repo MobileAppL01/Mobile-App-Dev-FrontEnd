@@ -213,7 +213,9 @@ export default function UserProfileScreen() {
                             <Text style={styles.headerTitle}>Hồ sơ của tôi</Text>
                             {/* Phone removed as per previous user edit */}
                             <View style={styles.vipBadge}>
-                                <Text style={styles.vipText}>Thành viên vip</Text>
+                                <Text style={styles.vipText}>
+                                    {(user?.role === 'ROLE_OWNER' || user?.role === 'OWNER') ? "Chủ sân" : "Thành viên vip"}
+                                </Text>
                             </View>
                         </View>
                     </View>

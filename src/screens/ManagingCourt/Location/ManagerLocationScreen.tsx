@@ -17,6 +17,7 @@ import { ManagerStackParamList } from "../../../navigation/ManagerNavigator";
 import { styles } from "./ManageLocationScreen.styles";
 import { useCourtStore } from "../../../store/useCourtStore";
 import { Header } from "../../../components/Header";
+import { useNotificationStore } from "../../../store/useNotificationStore";
 
 // IMPORT CÁC COMPONENT CON
 import LocationFormModal from "./LocationFormModal";
@@ -26,6 +27,8 @@ import { manageCourtService } from "../../../services/manageCourtService"; // Im
 const ManagerLocationsScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<ManagerStackParamList>>();
+
+  const { showNotification } = useNotificationStore();
 
   const {
     locations,
@@ -98,6 +101,10 @@ const ManagerLocationsScreen = () => {
     setPromoModalVisible(true);
   };
 
+  // Import hook at top (I will add it in a separate step or just assume it is available if I import it)
+  // But wait, the previous `replace` doesn't handle imports automatically.
+  // I need to add import first.
+
   const handleSubmitPromo = async (data: any) => {
     try {
       await createPromotion({
@@ -109,14 +116,21 @@ const ManagerLocationsScreen = () => {
         endDate: data.endDate,
         description: "Khuyến mãi từ App Owner",
       });
-      Alert.alert("Thành công", "Đã tạo khuyến mãi!");
+      // Alert.alert("Thành công", "Đã tạo khuyến mãi!");
+      showNotification("Đã tạo khuyến mãi thành công!", "success");
 
       // 2. BẮN TÍN HIỆU CẬP NHẬT
-      // Kết hợp ID và Date.now() để đảm bảo chuỗi luôn thay đổi, kích hoạt useEffect
       setUpdateSignal(`${selectedClusterForPromo.id}-${Date.now()}`);
       setPromoModalVisible(false);
-    } catch (error) {
-      // Store đã log lỗi
+    } catch (error: any) {
+      console.log('Promo Error:', error);
+      // Check for specific error code 5002
+      if (error?.response?.data?.code === 5002 ||
+        error?.response?.data?.message?.includes("already exists")) {
+        showNotification("Mã khuyến mãi đã tồn tại!", "error");
+      } else {
+        showNotification("Tạo khuyến mãi thất bại!", "error");
+      }
     }
   };
 

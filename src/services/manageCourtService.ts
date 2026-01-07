@@ -170,35 +170,47 @@ export const manageCourtService = {
 
   uploadFile: async (file: any, type: "location" | "court" | "avatar" = "location") => {
     try {
+      // Clean up base URL
+      let currentBaseURL = axiosInstance.defaults.baseURL || "http://10.0.2.2:8080/api/v1";
+      if (currentBaseURL.endsWith("/")) currentBaseURL = currentBaseURL.slice(0, -1);
+
+      const fileBaseURL = currentBaseURL.replace(/\/v1$/, ""); // Remove /v1 at end
+      const fullUrl = `${fileBaseURL}/files/upload/${type}`;
+
+      console.log(`[Upload] Starting upload to ${fullUrl}`);
+      console.log(`[Upload] File URI: ${file.uri}`);
+
       const formData = new FormData();
       formData.append("file", {
         uri: file.uri,
-        name: file.fileName || `upload_${Date.now()}.jpg`,
+        name: file.fileName || `image_${Date.now()}.jpg`,
         type: file.mimeType || "image/jpeg",
       } as any);
-
-      // Determine Base URL
-      const currentBaseURL = axiosInstance.defaults.baseURL || "http://10.0.2.2:8080/api/v1";
-      // Remove /v1 for file upload
-      const fileBaseURL = currentBaseURL.replace("/v1", "");
-      const fullUrl = `${fileBaseURL}/files/upload/${type}`;
 
       // Get Token
       const { useAuthStore } = require("../store/useAuthStore");
       const token = useAuthStore.getState().token;
 
-      console.log("Uploading to:", fullUrl);
-
       const response = await fetch(fullUrl, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
-          // Content-Type must be undefined so fetch generates the boundary
+          "Accept": "application/json",
+          // Content-Type left undefined for boundary generation
         },
         body: formData,
       });
 
-      const json = await response.json();
+      const text = await response.text();
+      console.log(`[Upload] Response status: ${response.status}`);
+
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        console.error("[Upload] Failed to parse JSON response:", text);
+        throw new Error(`Server returned ${response.status}: ${text}`);
+      }
 
       if (!response.ok) {
         throw new Error(json.message || "Upload failed");
@@ -206,7 +218,7 @@ export const manageCourtService = {
 
       return json;
     } catch (error) {
-      console.error("Upload File Error:", error);
+      console.error("[Upload] Error:", error);
       throw error;
     }
   },
