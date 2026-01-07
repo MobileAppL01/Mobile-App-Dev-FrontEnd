@@ -1,12 +1,16 @@
 // src/navigation/RootNavigator.tsx
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useEffect } from "react"; // <--- THÊM useEffect
+import {
+  NavigationContainer,
+  useNavigationContainerRef, // <--- THÊM useNavigationContainerRef
+} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import ClientTabs from "./ClientTabs";
+import * as Sentry from "@sentry/react-native"; // <--- THÊM Sentry
 
+import ClientTabs from "./ClientTabs";
 import { useAuthStore } from "../store/useAuthStore";
 
-// Import Screens
+// Import Screens (Giữ nguyên như cũ)
 import SplashScreen from "../screens/SplashScreen";
 import OnboardingScreenFirst from "../screens/Onboarding/OnboardingScreenFirst";
 import OnboardingScreenSecond from "../screens/Onboarding/OnboardingScreenSecond";
@@ -18,9 +22,9 @@ import RevenueScreen from "../screens/ManagingCourt/Revenue/RevenueScreen";
 import CourtDetailScreen from "../screens/BookingCourt/CourtDetailScreen";
 import ReviewScreen from "../screens/BookingCourt/ReviewScreen";
 import OwnerTabs from "./OwnerTabs";
-import BookingTimeSelectionScreen from '../screens/BookingCourt/BookingTimeSelectionScreen';
-import BookingConfirmScreen from '../screens/BookingCourt/BookingConfirmScreen';
-import PaymentQRScreen from '../screens/Payment/PaymentQRScreen';
+import BookingTimeSelectionScreen from "../screens/BookingCourt/BookingTimeSelectionScreen";
+import BookingConfirmScreen from "../screens/BookingCourt/BookingConfirmScreen";
+import PaymentQRScreen from "../screens/Payment/PaymentQRScreen";
 import ForgotPasswordScreen from "../screens/Authentication/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/Authentication/ResetPasswordScreen";
 import PaymentWebViewScreen from "../screens/Payment/PaymentWebViewScreen";
@@ -49,14 +53,29 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+export const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true, // Đo thời gian load màn hình đầu tiên
+});
 export default function RootNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const hasSeenOnboarding = useAuthStore((state) => state.hasSeenOnboarding);
   const userRole = useAuthStore((state) => state.user?.role);
+
+  // 2. Tạo ref cho Navigation Container
+  const navigationRef = useNavigationContainerRef();
+
+  // Đăng ký ref với Sentry integration
+  useEffect(() => {
+    if (navigationRef) {
+      navigationIntegration.registerNavigationContainer(navigationRef);
+    }
+  }, [navigationRef]);
+
   console.log("userrole at Root\n", userRole);
 
   return (
-    <NavigationContainer>
+    // 4. Gắn ref vào NavigationContainer
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           // === LOGGED IN ===
@@ -69,10 +88,19 @@ export default function RootNavigator() {
               <Stack.Screen name="ClientTabs" component={ClientTabs} />
               <Stack.Screen name="CourtDetail" component={CourtDetailScreen} />
               <Stack.Screen name="ReviewScreen" component={ReviewScreen} />
-              <Stack.Screen name="BookingTimeSelection" component={BookingTimeSelectionScreen} />
-              <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+              <Stack.Screen
+                name="BookingTimeSelection"
+                component={BookingTimeSelectionScreen}
+              />
+              <Stack.Screen
+                name="BookingConfirm"
+                component={BookingConfirmScreen}
+              />
               <Stack.Screen name="PaymentQR" component={PaymentQRScreen} />
-              <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} />
+              <Stack.Screen
+                name="PaymentWebView"
+                component={PaymentWebViewScreen}
+              />
             </>
           )
         ) : (
@@ -80,28 +108,52 @@ export default function RootNavigator() {
           <>
             {!hasSeenOnboarding && (
               <>
-                <Stack.Screen name="OnboardingFirst" component={OnboardingScreenFirst} />
-                <Stack.Screen name="OnboardingSecond" component={OnboardingScreenSecond} />
-                <Stack.Screen name="OnboardingThird" component={OnboardingScreenThird} />
-                {/* Show custom splash only during onboarding flow if needed, or make it the very first if !hasSeenOnboarding */}
+                <Stack.Screen
+                  name="OnboardingFirst"
+                  component={OnboardingScreenFirst}
+                />
+                <Stack.Screen
+                  name="OnboardingSecond"
+                  component={OnboardingScreenSecond}
+                />
+                <Stack.Screen
+                  name="OnboardingThird"
+                  component={OnboardingScreenThird}
+                />
                 <Stack.Screen name="Splash" component={SplashScreen} />
               </>
             )}
-            {/* If hasSeenOnboarding is true, we go directly to PreLogin */}
             <Stack.Screen name="PreLogin" component={PreLogin} />
-            {hasSeenOnboarding && <Stack.Screen name="Splash" component={SplashScreen} />}
+            {hasSeenOnboarding && (
+              <Stack.Screen name="Splash" component={SplashScreen} />
+            )}
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+            />
+            <Stack.Screen
+              name="ResetPassword"
+              component={ResetPasswordScreen}
+            />
 
             {/* Guest Access */}
             <Stack.Screen name="ClientTabs" component={ClientTabs} />
             <Stack.Screen name="CourtDetail" component={CourtDetailScreen} />
-            <Stack.Screen name="BookingTimeSelection" component={BookingTimeSelectionScreen} />
-            <Stack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
+            <Stack.Screen
+              name="BookingTimeSelection"
+              component={BookingTimeSelectionScreen}
+            />
+            <Stack.Screen
+              name="BookingConfirm"
+              component={BookingConfirmScreen}
+            />
             <Stack.Screen name="PaymentQR" component={PaymentQRScreen} />
-            <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} />
+            <Stack.Screen
+              name="PaymentWebView"
+              component={PaymentWebViewScreen}
+            />
           </>
         )}
       </Stack.Navigator>

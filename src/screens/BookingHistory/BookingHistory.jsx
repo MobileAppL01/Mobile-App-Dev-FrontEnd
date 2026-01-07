@@ -6,7 +6,7 @@ import {
   FlatList,
   StatusBar,
   RefreshControl,
-  ActivityIndicator,
+  ActivityIndicator,Button
 } from "react-native";
 import {
   Ionicons,
@@ -14,7 +14,7 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Giả sử bạn dùng cái này để lưu token
-
+import * as Sentry from "@sentry/react-native"; // <--- THÊM DÒNG NÀY
 // Import styles từ file riêng
 import styles from "./BookingHistory.styles";
 import { bookingService } from "../../services/bookingService";
@@ -225,6 +225,18 @@ export default function BookingHistoryScreen() {
         <Text style={styles.headerSubtitle}>
           Xem và quản lí lịch đặt sân của bạn
         </Text>
+        {/* <Button
+          title="Bắn thử lỗi lên Sentry!"
+          color="red"
+          onPress={() => {
+            try {
+              throw new Error("Test Sentry: Lỗi này từ History Screen");
+            } catch (error) {
+              Sentry.captureException(error);
+              alert("Đã gửi lỗi lên Sentry xong!");
+            }
+          }}
+        /> */}
       </View>
 
       {/* TAB SWITCHER */}

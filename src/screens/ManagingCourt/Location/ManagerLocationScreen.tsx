@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Button,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +25,7 @@ import LocationFormModal from "./LocationFormModal";
 import PromotionFormModal from "./PromotionFormModal";
 import LocationItem from "./LocationItem"; // Import component vừa tạo
 import { manageCourtService } from "../../../services/manageCourtService"; // Import service để gọi API
+import * as Sentry from "@sentry/react-native"; // <--- THÊM DÒNG NÀY
 const ManagerLocationsScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<ManagerStackParamList>>();
@@ -88,7 +90,7 @@ const ManagerLocationsScreen = () => {
         onPress: async () => {
           try {
             await deleteLocation(item.id);
-          } catch (e) { }
+          } catch (e) {}
         },
       },
     ]);
@@ -123,10 +125,12 @@ const ManagerLocationsScreen = () => {
       setUpdateSignal(`${selectedClusterForPromo.id}-${Date.now()}`);
       setPromoModalVisible(false);
     } catch (error: any) {
-      console.log('Promo Error:', error);
+      console.log("Promo Error:", error);
       // Check for specific error code 5002
-      if (error?.response?.data?.code === 5002 ||
-        error?.response?.data?.message?.includes("already exists")) {
+      if (
+        error?.response?.data?.code === 5002 ||
+        error?.response?.data?.message?.includes("already exists")
+      ) {
         showNotification("Mã khuyến mãi đã tồn tại!", "error");
       } else {
         showNotification("Tạo khuyến mãi thất bại!", "error");
@@ -144,13 +148,42 @@ const ManagerLocationsScreen = () => {
   // Hàm xem đánh giá
   const handleViewReviews = (item: any) => {
     // Navigate is typed with StackParamList so it should work if OwnerReviewManager is in it
-    (navigation as any).navigate('OwnerReviewManager', { locationId: item.id, locationName: item.name });
+    (navigation as any).navigate("OwnerReviewManager", {
+      locationId: item.id,
+      locationName: item.name,
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Header />
+      {/* <Button
+        title="Giả lập User Khác"
+        onPress={() => {
+          const randomId = Math.floor(Math.random() * 1000).toString();
+          Sentry.setUser({
+            id: randomId,
+            email: `user${randomId}@gmail.com`,
+            username: `User Test ${randomId}`,
+          });
+          alert(`Đã đổi thành User ${randomId}. Giờ hãy đi spam các màn hình!`);
+        }}
+      />
+      <Button
+        title="Test Lag (Chậm App)"
+        onPress={() => {
+          // SỬA: Dùng startInactiveSpan thay cho startTransaction
+          const span = Sentry.startInactiveSpan({
+            name: "test-slow-transaction",
+          });
 
+          // Giả vờ xử lý nặng trong 2 giây
+          setTimeout(() => {
+            span.end(); // Kết thúc span
+            alert("Đã gửi transaction chậm (2s) lên Sentry");
+          }, 2000);
+        }}
+      /> */}
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -172,7 +205,6 @@ const ManagerLocationsScreen = () => {
           <Ionicons name="add-circle-outline" size={28} color="#3B9AFF" />
         </TouchableOpacity>
       </View>
-
       {/* Main List */}
       {isLoading && !locations.length ? (
         <View style={styles.center}>
@@ -204,16 +236,13 @@ const ManagerLocationsScreen = () => {
           }
         />
       )}
-
       {/* --- CÁC MODAL COMPONENT --- */}
-
       <LocationFormModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSubmit={handleSubmitLocation}
         initialData={editingCluster}
       />
-
       <PromotionFormModal
         visible={promoModalVisible}
         onClose={() => setPromoModalVisible(false)}
