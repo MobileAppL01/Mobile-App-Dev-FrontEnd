@@ -44,7 +44,9 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         try {
-            const date = new Date(dateString);
+            // Treat as UTC if no 'Z'
+            const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
             const diffHrs = diffMs / (1000 * 60 * 60);
@@ -52,7 +54,7 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
             // Options for VN time
             const vnOptions: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Ho_Chi_Minh' };
 
-            if (diffHrs < 24 && diffHrs >= 0) {
+            if (diffHrs < 24 && diffHrs >= -1) {
                 return date.toLocaleTimeString('vi-VN', { ...vnOptions, hour: '2-digit', minute: '2-digit' });
             } else if (diffHrs < 48 && diffHrs >= 0) {
                 return "Hôm qua";

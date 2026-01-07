@@ -16,6 +16,8 @@ import { reviewService } from '../../services/reviewService';
 
 const { width } = Dimensions.get('window');
 
+import { getCourtImageSource } from '../../utils/imageHelper';
+
 export default function CourtDetailScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute();
@@ -31,7 +33,7 @@ export default function CourtDetailScreen() {
         time: court?.time || (court?.openTime ? `${court.openTime.substring(0, 5)} - ${court.closeTime?.substring(0, 5)}` : "6:00 AM - 10:00 PM"),
         description: court?.description || "Sân Cầu Lông Anh Nghĩa là địa điểm lý tưởng cho những ai yêu thích bộ môn cầu lông...",
         images: [
-            court?.image || require("../../assets/images/court1.png"),
+            getCourtImageSource(court?.image?.uri),
             require("../../assets/images/court2.png"),
             require("../../assets/images/court1.png")
         ]
@@ -151,7 +153,6 @@ export default function CourtDetailScreen() {
                         <Text style={styles.sectionTitle}>Mô tả</Text>
                         <Text style={styles.descriptionText}>
                             {courtData.description}
-                            <Text style={styles.readMore}> Đọc thêm...</Text>
                         </Text>
                     </View>
 

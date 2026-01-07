@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, Image, RefreshControl, Dimensions, Alert } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, Image, RefreshControl, Dimensions, Alert, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInboxStore } from '../../store/useInboxStore';
 import { COLORS } from '../../constants/theme';
@@ -19,7 +20,9 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
     // Icon Logic based on type
     const getIcon = () => {
         switch (item.type) {
-            case 'BOOKING': return <MaterialIcons name="sports-tennis" size={24} color={COLORS.primary} />;
+            case 'BOOKING':
+            case 'PAYMENT_SUCCESS':
+                return <MaterialIcons name="sports-tennis" size={24} color={COLORS.primary} />;
             case 'PROMOTION': return <Ionicons name="gift-outline" size={24} color="#F59E0B" />;
             case 'SYSTEM': return <Ionicons name="information-circle-outline" size={24} color="#10B981" />;
             default: return <Ionicons name="notifications-outline" size={24} color={COLORS.placeholder} />;
@@ -28,18 +31,24 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
 
     const getIconBg = () => {
         switch (item.type) {
-            case 'BOOKING': return '#EBF5FF'; // Light Blue
+            case 'BOOKING':
+            case 'PAYMENT_SUCCESS':
+                return '#EBF5FF'; // Light Blue
             case 'PROMOTION': return '#FEF3C7'; // Light Yellow
             case 'SYSTEM': return '#D1FAE5'; // Light Green
             default: return '#F3F4F6';
         }
     };
 
-    // Format Date (Simple relative time or absolute)
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         try {
-            const date = new Date(dateString);
+            // Assume the backend sends UTC but without 'Z' (e.g. 2023-10-10T10:00:00).
+            // By appending 'Z', we force it to be treated as UTC.
+            // If the backend already includes 'Z' or offset, this might need adjustment,
+            // but usually this fixes the "treated as local" issue.
+            const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
             const diffHrs = diffMs / (1000 * 60 * 60);
@@ -47,7 +56,7 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
             // Options for VN time
             const vnOptions: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Ho_Chi_Minh' };
 
-            if (diffHrs < 24 && diffHrs >= 0) {
+            if (diffHrs < 24 && diffHrs >= -1) {
                 return date.toLocaleTimeString('vi-VN', { ...vnOptions, hour: '2-digit', minute: '2-digit' });
             } else if (diffHrs < 48 && diffHrs >= 0) {
                 return "Hôm qua";
@@ -58,34 +67,50 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
         }
     };
 
+    const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+        const trans = dragX.interpolate({
+            inputRange: [-100, 0],
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+        });
+        return (
+            <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteAction}>
+                <Animated.View style={[styles.deleteActionContent, { transform: [{ translateX: trans }] }]}>
+                    <Ionicons name="trash-outline" size={24} color="#fff" />
+                    <Text style={styles.deleteActionText}>Xóa</Text>
+                </Animated.View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
-        <TouchableOpacity
-            style={[styles.itemContainer, !item.isRead && styles.unreadItem]}
-            onPress={() => onPress(item)}
-            activeOpacity={0.7}
-        >
-            <View style={[styles.iconBox, { backgroundColor: getIconBg() }]}>
-                {getIcon()}
-            </View>
-            <View style={styles.textContainer}>
-                <View style={styles.itemHeader}>
-                    <Text style={[styles.itemTitle, !item.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
-                        {item.title}
-                    </Text>
-                    <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
-                    {/* Delete Icon */}
-                    <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteBtn}>
-                        <Ionicons name="close" size={16} color="#999" />
-                    </TouchableOpacity>
-                </View>
-                <Text style={styles.itemMessage} numberOfLines={2}>
-                    {item.message}
-                </Text>
-            </View>
-            {!item.isRead && (
-                <View style={styles.unreadDot} />
-            )}
-        </TouchableOpacity>
+        <View style={{ marginBottom: 12 }}>
+            <Swipeable renderRightActions={renderRightActions}>
+                <TouchableOpacity
+                    style={[styles.itemContainer, !item.isRead && styles.unreadItem]}
+                    onPress={() => onPress(item)}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.iconBox, { backgroundColor: getIconBg() }]}>
+                        {getIcon()}
+                    </View>
+                    <View style={styles.textContainer}>
+                        <View style={styles.itemHeader}>
+                            <Text style={[styles.itemTitle, !item.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
+                                {item.title}
+                            </Text>
+                            <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
+                        </View>
+                        <Text style={styles.itemMessage} numberOfLines={2}>
+                            {item.message}
+                        </Text>
+                    </View>
+                    {!item.isRead && (
+                        <View style={styles.unreadDot} />
+                    )}
+                </TouchableOpacity>
+            </Swipeable>
+        </View>
     );
 };
 
@@ -98,9 +123,10 @@ const NotificationScreen = () => {
     }, []);
 
     const handlePressItem = (item: NotificationItemType) => {
-        if (!item.isRead) {
-            markRead(item.id);
-        }
+        // Disabled markRead on press as requested
+        // if (!item.isRead) {
+        //    markRead(item.id);
+        // }
         // Navigate if needed
     };
 
@@ -195,7 +221,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         padding: 16,
         borderRadius: 16,
-        marginBottom: 12,
         alignItems: 'flex-start',
         // Shadow
         shadowColor: "#000",
@@ -262,6 +287,24 @@ const styles = StyleSheet.create({
     deleteBtn: {
         padding: 4,
         marginLeft: 8
+    },
+    deleteAction: {
+        backgroundColor: COLORS.error,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        borderTopRightRadius: 16,
+        borderBottomRightRadius: 16,
+        // Match itemContainer margin but we need to verify layout
+    },
+    deleteActionContent: {
+        alignItems: 'center',
+    },
+    deleteActionText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
     }
 });
 

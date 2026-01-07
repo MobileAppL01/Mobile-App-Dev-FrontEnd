@@ -218,6 +218,13 @@ export default function UserProfileScreen() {
                                 </Text>
                             </View>
                         </View>
+
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('AboutUs' as any)}
+                            style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}
+                        >
+                            <Ionicons name="information-circle-outline" size={28} color="white" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 

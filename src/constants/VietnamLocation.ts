@@ -20,11 +20,32 @@ export const VIETNAM_LOCATIONS = [
         districts: ["Thành phố Biên Hòa", "Thành phố Long Khánh", "Huyện Tân Phú", "Huyện Vĩnh Cửu", "Huyện Định Quán", "Huyện Trảng Bom", "Huyện Thống Nhất", "Huyện Cẩm Mỹ", "Huyện Long Thành", "Huyện Xuân Lộc", "Huyện Nhơn Trạch"]
     },
     // Add common provinces for brevity, real app would import full JSON
-    { name: "Thành phố Hải Phòng", districts: [] },
-    { name: "Thành phố Cần Thơ", districts: [] },
-    { name: "Tỉnh Bà Rịa - Vũng Tàu", districts: [] },
-    { name: "Tỉnh Quảng Ninh", districts: [] },
-    { name: "Tỉnh Khánh Hòa", districts: [] },
-    { name: "Tỉnh Lâm Đồng", districts: [] },
-    { name: "Tỉnh Thừa Thiên Huế", districts: [] },
+    {
+        name: "Thành phố Hải Phòng",
+        districts: ["Quận Hồng Bàng", "Quận Ngô Quyền", "Quận Lê Chân", "Quận Hải An", "Quận Kiến An", "Quận Đồ Sơn", "Quận Dương Kinh", "Huyện Thuỷ Nguyên", "Huyện An Dương", "Huyện An Lão", "Huyện Kiến Thuỵ", "Huyện Tiên Lãng", "Huyện Vĩnh Bảo", "Huyện Cát Hải", "Huyện Bạch Long Vĩ"]
+    },
+    {
+        name: "Thành phố Cần Thơ",
+        districts: ["Quận Ninh Kiều", "Quận Ô Môn", "Quận Bình Thuỷ", "Quận Cái Răng", "Quận Thốt Nốt", "Huyện Vĩnh Thạnh", "Huyện Cờ Đỏ", "Huyện Phong Điền", "Huyện Thới Lai"]
+    },
+    {
+        name: "Tỉnh Bà Rịa - Vũng Tàu",
+        districts: ["Thành phố Vũng Tàu", "Thành phố Bà Rịa", "Huyện Châu Đức", "Huyện Xuyên Mộc", "Huyện Long Điền", "Huyện Đất Đỏ", "Huyện Côn Đảo", "Thị xã Phú Mỹ"]
+    },
+    {
+        name: "Tỉnh Quảng Ninh",
+        districts: ["Thành phố Hạ Long", "Thành phố Móng Cái", "Thành phố Uông Bí", "Thành phố Cẩm Phả", "Thị xã Quảng Yên", "Thị xã Đông Triều", "Huyện Bình Liêu", "Huyện Tiên Yên", "Huyện Đầm Hà", "Huyện Hải Hà", "Huyện Ba Chẽ", "Huyện Vân Đồn", "Huyện Cô Tô"]
+    },
+    {
+        name: "Tỉnh Khánh Hòa",
+        districts: ["Thành phố Nha Trang", "Thành phố Cam Ranh", "Thị xã Ninh Hòa", "Huyện Vạn Ninh", "Huyện Diên Khánh", "Huyện Khánh Vĩnh", "Huyện Khánh Sơn", "Huyện Cam Lâm", "Huyện Trường Sa"]
+    },
+    {
+        name: "Tỉnh Lâm Đồng",
+        districts: ["Thành phố Đà Lạt", "Thành phố Bảo Lộc", "Huyện Đam Rông", "Huyện Lạc Dương", "Huyện Lâm Hà", "Huyện Đơn Dương", "Huyện Đức Trọng", "Huyện Di Linh", "Huyện Bảo Lâm", "Huyện Đạ Huoai", "Huyện Đạ Tẻh", "Huyện Cát Tiên"]
+    },
+    {
+        name: "Tỉnh Thừa Thiên Huế",
+        districts: ["Thành phố Huế", "Huyện Phong Điền", "Huyện Quảng Điền", "Huyện Phú Vang", "Thị xã Hương Thủy", "Thị xã Hương Trà", "Huyện A Lưới", "Huyện Phú Lộc", "Huyện Nam Đông"]
+    }
 ];

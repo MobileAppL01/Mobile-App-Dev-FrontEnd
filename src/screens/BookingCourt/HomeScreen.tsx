@@ -9,7 +9,8 @@ import {
   Dimensions,
   FlatList,
   Modal,
-  ScrollView
+  ScrollView,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -36,8 +37,65 @@ interface Court {
   phone?: string;
   description?: string;
 }
+import { getCourtImageSource } from '../../utils/imageHelper';
 
 const ITEMS_PER_PAGE = 6;
+
+const CourtCard = React.memo(({ item, onPress }: { item: Court, onPress: (item: Court) => void }) => {
+  const [imageSource, setImageSource] = useState(getCourtImageSource(item.image?.uri));
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImageSource(getCourtImageSource(item.image?.uri));
+  }, [item.image?.uri]);
+
+  const handleImageError = () => {
+    if (!hasError) {
+      setHasError(true);
+      // Fallback to a random default image using the helper
+      setImageSource(getCourtImageSource(null));
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.cardContainer}
+      activeOpacity={0.9}
+      onPress={() => onPress(item)}
+    >
+      <View style={styles.imageContainer}>
+        <Image
+          source={imageSource}
+          style={styles.courtImage}
+          onError={handleImageError}
+        />
+        {/* Overlay Icons */}
+        <View style={styles.overlayIcons}>
+          <View style={styles.iconBadge}>
+            <Ionicons name="heart-outline" size={16} color="#3B9AFF" />
+          </View>
+          <View style={[styles.iconBadge, { marginLeft: 8 }]}>
+            <Ionicons name="location-outline" size={16} color="#3B9AFF" />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.cardContent}>
+        <Text style={styles.courtName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.courtAddress} numberOfLines={2}>
+          {item.address}
+        </Text>
+        <Text style={styles.courtTime}>
+          <Text style={{ fontWeight: 'bold' }}>{item.openTime?.substring(0, 5)}</Text> - <Text style={{ fontWeight: 'bold' }}>{item.closeTime?.substring(0, 5)}</Text>
+        </Text>
+
+        <TouchableOpacity style={styles.bookButton} onPress={() => onPress(item)}>
+          <Text style={styles.bookButtonText}>Đặt ngay</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function HomeScreen() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +104,7 @@ export default function HomeScreen() {
 
   const [courtsData, setCourtsData] = useState<Court[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filter Data States (Options)
   const [provinces, setProvinces] = useState<string[]>([]);
@@ -63,23 +122,15 @@ export default function HomeScreen() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchCourts().then(() => setRefreshing(false));
+  }, []);
+
 
   useEffect(() => {
     fetchInitialData();
   }, []);
-
-  const fetchInitialData = async () => {
-    try {
-      const [provs] = await Promise.all([
-        courtService.getProvinces()
-      ]);
-      setProvinces(provs);
-      fetchCourts(); // Initial fetch
-    } catch (e) {
-      console.error("Init Error:", e);
-      fetchCourts();
-    }
-  }
 
   const fetchCourts = async (filters?: { searchText?: string; city?: string; district?: string; min?: number; max?: number; sort?: 'price_asc' | 'price_desc' | null }) => {
     try {
@@ -105,10 +156,9 @@ export default function HomeScreen() {
         pricePerHour: loc.pricePerHour,
         openTime: "06:00", // Default
         closeTime: "22:00", // Default
-        image: { uri: "https://images.unsplash.com/photo-1626224583764-84786071963f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" },
-        // Fallback to online image to avoid 'require' errors if assets are missing
+        image: { uri: null }, // Initialize with null to trigger default/random logic
         phone: "0123456789",
-        description: "Sân cầu lông chất lượng cao..."
+        description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ."
       }));
 
       // 3. Client-side Filter
@@ -147,6 +197,18 @@ export default function HomeScreen() {
     }
   };
 
+  const fetchInitialData = async () => {
+    try {
+      // Use local data for filter options as requested ("fake/noise data")
+      const provs = VIETNAM_LOCATIONS.map(p => p.name);
+      setProvinces(provs);
+      fetchCourts(); // Initial fetch
+    } catch (e) {
+      console.error("Init Error:", e);
+      fetchCourts();
+    }
+  }
+
   const handleApplyFilter = () => {
     const min = minPrice ? parseInt(minPrice) : undefined;
     const max = maxPrice ? parseInt(maxPrice) : undefined;
@@ -165,11 +227,12 @@ export default function HomeScreen() {
   const onSelectCity = async (city: string) => {
     setSelectedCity(city);
     setSelectedDistrict('');
-    try {
-      const dists = await courtService.getDistrictsByProvince(city);
-      setDistricts(dists);
-    } catch (e) {
-      console.error(e);
+
+    // Find districts from local constant
+    const selectedProv = VIETNAM_LOCATIONS.find(p => p.name === city);
+    if (selectedProv) {
+      setDistricts(selectedProv.districts);
+    } else {
       setDistricts([]);
     }
   };
@@ -222,45 +285,7 @@ export default function HomeScreen() {
   );
 
   const renderCourtItem = ({ item }: { item: Court }) => (
-    <TouchableOpacity
-      style={styles.cardContainer}
-      activeOpacity={0.9}
-      onPress={() => handleCourtPress(item)}
-    >
-      <View style={styles.imageContainer}>
-        <Image
-          source={
-            (item.image && item.image.uri)
-              ? item.image
-              : { uri: "https://images.unsplash.com/photo-1626224583764-84786071963f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" }
-          }
-          style={styles.courtImage}
-        />
-        {/* Overlay Icons */}
-        <View style={styles.overlayIcons}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="heart-outline" size={16} color="#3B9AFF" />
-          </View>
-          <View style={[styles.iconBadge, { marginLeft: 8 }]}>
-            <Ionicons name="location-outline" size={16} color="#3B9AFF" />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.cardContent}>
-        <Text style={styles.courtName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.courtAddress} numberOfLines={2}>
-          {item.address}
-        </Text>
-        <Text style={styles.courtTime}>
-          <Text style={{ fontWeight: 'bold' }}>{item.openTime?.substring(0, 5)}</Text> - <Text style={{ fontWeight: 'bold' }}>{item.closeTime?.substring(0, 5)}</Text>
-        </Text>
-
-        <TouchableOpacity style={styles.bookButton} onPress={() => handleCourtPress(item)}>
-          <Text style={styles.bookButtonText}>Đặt ngay</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+    <CourtCard item={item} onPress={handleCourtPress} />
   );
 
   const renderPagination = () => {
@@ -513,6 +538,19 @@ export default function HomeScreen() {
         ListFooterComponent={renderPagination}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3B9AFF']} />
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={{ alignItems: 'center', marginTop: 50, paddingHorizontal: 20 }}>
+              <Ionicons name="search-outline" size={60} color="#ccc" />
+              <Text style={{ marginTop: 16, fontSize: 16, color: '#666', textAlign: 'center' }}>
+                Không tìm thấy sân cầu lông nào phù hợp với bộ lọc của bạn.
+              </Text>
+            </View>
+          ) : null
+        }
       />
       {renderFilterModal()}
     </SafeAreaView>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "template-onboarding",
+    "name": "Bookinton",
     "slug": "bookingtonmobiledev",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.khoale2k4.templateonboarding",
+      "package": "com.bookinton.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/icons/adaptive-icon.png",
         "backgroundColor": "#ffffff"

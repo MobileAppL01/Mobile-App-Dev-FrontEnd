@@ -4,7 +4,7 @@ export interface NotificationItem {
     id: string;
     title: string;
     message: string;
-    type: 'SYSTEM' | 'PROMOTION' | 'BOOKING';
+    type: 'SYSTEM' | 'PROMOTION' | 'BOOKING' | 'PAYMENT_SUCCESS';
     isRead: boolean;
     createdAt: string;
 }

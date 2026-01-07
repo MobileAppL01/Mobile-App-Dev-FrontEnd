@@ -13,8 +13,10 @@ import {
     UIManager,
     ActivityIndicator,
     Alert,
-    Animated
+    Animated,
+    RefreshControl
 } from 'react-native';
+import { getAvatarSource } from '../../utils/imageHelper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { reviewService, UIReview, ReviewStats, UIReply } from '../../services/reviewService';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +43,7 @@ export default function ReviewScreen() {
     const [reviews, setReviews] = useState<UIReview[]>([]);
     const [stats, setStats] = useState<ReviewStats>({ averageRating: 0, totalReviews: 0, counts: {} } as any);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState('Đề xuất');
 
     // Modal State
@@ -57,6 +60,11 @@ export default function ReviewScreen() {
 
     // Refs for Swipeables to close them
     const swipeableRefs = useRef(new Map()).current;
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        loadData().then(() => setRefreshing(false));
+    }, [locationId]);
 
     useEffect(() => {
         loadData();
@@ -263,7 +271,7 @@ export default function ReviewScreen() {
         const content = (
             <View style={[styles.replyContainer, { backgroundColor }]}>
                 <View style={styles.reviewHeader}>
-                    <Image source={{ uri: reply.user.avatar }} style={styles.avatarSmall} />
+                    <Image source={getAvatarSource(reply.user.avatar)} style={styles.avatarSmall} />
                     <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={styles.userName}>{reply.user.name}</Text>
@@ -304,7 +312,7 @@ export default function ReviewScreen() {
         const content = (
             <View style={[styles.reviewItem, { backgroundColor }]}>
                 <View style={styles.reviewHeader}>
-                    <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+                    <Image source={getAvatarSource(item.user.avatar)} style={styles.avatar} />
                     <View style={styles.userInfo}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             <Text style={styles.userName}>{item.user.name}</Text>
@@ -406,7 +414,10 @@ export default function ReviewScreen() {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3B9AFF']} />}
+            >
                 {/* Summary Section */}
                 <View style={styles.summaryContainer}>
                     <View style={styles.bigRating}>
@@ -448,83 +459,85 @@ export default function ReviewScreen() {
                 <Ionicons name="pencil" size={24} color="#fff" />
             </TouchableOpacity>
 
-            {modalVisible && (
-                <View style={[styles.modalOverlay, { zIndex: 9998 }]}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>
-                            {editTarget
-                                ? (editTarget.type === 'REVIEW' ? "Chỉnh sửa đánh giá" : "Chỉnh sửa bình luận")
-                                : (replyTarget ? "Trả lời bình luận" : "Đánh giá của bạn")
-                            }
-                        </Text>
-                        <View style={styles.miniUser}>
-                            <Image source={{ uri: user?.avatar || "https://i.pravatar.cc/150?u=99" }} style={styles.miniAvatar} />
-                            <View>
-                                <Text style={styles.miniName}>{user?.fullName || "Tôi"}</Text>
-                                <Text style={styles.miniNote}>Thông tin công khai</Text>
+            {
+                modalVisible && (
+                    <View style={[styles.modalOverlay, { zIndex: 9998 }]}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>
+                                {editTarget
+                                    ? (editTarget.type === 'REVIEW' ? "Chỉnh sửa đánh giá" : "Chỉnh sửa bình luận")
+                                    : (replyTarget ? "Trả lời bình luận" : "Đánh giá của bạn")
+                                }
+                            </Text>
+                            <View style={styles.miniUser}>
+                                <Image source={getAvatarSource(user?.avatar)} style={styles.miniAvatar} />
+                                <View>
+                                    <Text style={styles.miniName}>{user?.fullName || "Tôi"}</Text>
+                                    <Text style={styles.miniNote}>Thông tin công khai</Text>
+                                </View>
                             </View>
-                        </View>
 
-                        {/* Rating only show if Review (Edit Review or Create Review) */}
-                        {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
-                            <View style={styles.starInputRow}>
-                                {[1, 2, 3, 4, 5].map(s => (
-                                    <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
-                                        <Ionicons
-                                            name={s <= myRating ? "star" : "star-outline"}
-                                            size={32}
-                                            color="#FFD700"
-                                            style={{ marginHorizontal: 4 }}
-                                        />
+                            {/* Rating only show if Review (Edit Review or Create Review) */}
+                            {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                                <View style={styles.starInputRow}>
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                        <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
+                                            <Ionicons
+                                                name={s <= myRating ? "star" : "star-outline"}
+                                                size={32}
+                                                color="#FFD700"
+                                                style={{ marginHorizontal: 4 }}
+                                            />
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    placeholder={replyTarget ? "Nhập câu trả lời của bạn..." : "Hãy mô tả trải nghiệm của bạn..."}
+                                    multiline
+                                    style={styles.textInput}
+                                    value={myComment}
+                                    onChangeText={setMyComment}
+                                />
+                            </View>
+
+                            {/* Image picker only for Reviews */}
+                            {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                                <View style={styles.addImageAction}>
+                                    <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
+                                    <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
+                                        {selectedImages.length > 0 ? (
+                                            <ScrollView horizontal>
+                                                {selectedImages.map((uri, idx) => (
+                                                    <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
+                                                ))}
+                                            </ScrollView>
+                                        ) : (
+                                            <>
+                                                <Ionicons name="images-outline" size={24} color="#666" />
+                                                <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
+                                            </>
+                                        )}
                                     </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
+                                </View>
+                            )}
 
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                placeholder={replyTarget ? "Nhập câu trả lời của bạn..." : "Hãy mô tả trải nghiệm của bạn..."}
-                                multiline
-                                style={styles.textInput}
-                                value={myComment}
-                                onChangeText={setMyComment}
-                            />
-                        </View>
-
-                        {/* Image picker only for Reviews */}
-                        {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
-                            <View style={styles.addImageAction}>
-                                <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
-                                <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
-                                    {selectedImages.length > 0 ? (
-                                        <ScrollView horizontal>
-                                            {selectedImages.map((uri, idx) => (
-                                                <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
-                                            ))}
-                                        </ScrollView>
-                                    ) : (
-                                        <>
-                                            <Ionicons name="images-outline" size={24} color="#666" />
-                                            <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
-                                        </>
-                                    )}
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                                    <Text style={styles.cancelText}>Quay lại</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                                    <Text style={styles.submitText}>
+                                        {editTarget ? "Cập nhật" : (replyTarget ? "Phản hồi" : "Gửi đánh giá")}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
-                        )}
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
-                                <Text style={styles.cancelText}>Quay lại</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-                                <Text style={styles.submitText}>
-                                    {editTarget ? "Cập nhật" : (replyTarget ? "Phản hồi" : "Gửi đánh giá")}
-                                </Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
-                </View>
-            )}
+                )
+            }
         </SafeAreaView >
     );
 }

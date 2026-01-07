@@ -28,6 +28,7 @@ import PaymentQRScreen from "../screens/Payment/PaymentQRScreen";
 import ForgotPasswordScreen from "../screens/Authentication/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/Authentication/ResetPasswordScreen";
 import PaymentWebViewScreen from "../screens/Payment/PaymentWebViewScreen";
+import AboutUsScreen from "../screens/Profile/AboutUsScreen";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -49,6 +50,7 @@ export type RootStackParamList = {
   BookingTimeSelection: { location: any };
   BookingConfirm: { bookingInfo: any };
   PaymentQR: { booking: any; totalPrice: number; bankInfo: any };
+  AboutUs: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -101,6 +103,7 @@ export default function RootNavigator() {
                 name="PaymentWebView"
                 component={PaymentWebViewScreen}
               />
+              <Stack.Screen name="AboutUs" component={AboutUsScreen} />
             </>
           )
         ) : (
@@ -154,6 +157,7 @@ export default function RootNavigator() {
               name="PaymentWebView"
               component={PaymentWebViewScreen}
             />
+            <Stack.Screen name="AboutUs" component={AboutUsScreen} />
           </>
         )}
       </Stack.Navigator>
