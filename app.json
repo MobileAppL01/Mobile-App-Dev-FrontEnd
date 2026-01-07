@@ -21,8 +21,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "minSdkVersion": 24
     },
+    "newArchEnabled": true,
     "web": {
       "favicon": "./src/assets/icons/favicon.png"
     },
@@ -40,19 +42,11 @@
         {
           "android": {
             "useLegacyPackaging": true,
-            "newArchEnabled": false
+            "ndkVersion": "27.0.12077973"
           }
         }
       ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "react-native-mobile-app",
-          "organization": "hcmut-nu"
-        }
-      ],
-      "expo-build-properties",
+      
       "@react-native-community/datetimepicker"
     ],
     "runtimeVersion": {

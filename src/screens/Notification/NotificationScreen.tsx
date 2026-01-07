@@ -7,19 +7,42 @@ import { COLORS } from '../../constants/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NotificationItem as NotificationItemType } from '../../services/notificationService';
+import { Skeleton } from '../../components/common/Skeleton';
 
 const { width } = Dimensions.get('window');
 
 interface NotificationItemProps {
-    item: NotificationItemType;
+    item: NotificationItemType | { isSkeleton: boolean, id: string };
     onPress: (item: NotificationItemType) => void;
     onDelete: (id: string) => void;
 }
 
 const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) => {
+    // Skeleton Loading View
+    if ('isSkeleton' in item && item.isSkeleton) {
+        return (
+            <View style={[styles.itemContainer, { marginBottom: 12 }]}>
+                <View style={[styles.iconBox, { backgroundColor: '#f0f0f0' }]}>
+                    <Skeleton width={24} height={24} borderRadius={12} />
+                </View>
+                <View style={styles.textContainer}>
+                    <View style={styles.itemHeader}>
+                        <Skeleton width={120} height={16} borderRadius={4} />
+                        <Skeleton width={50} height={12} borderRadius={4} />
+                    </View>
+                    <Skeleton width="90%" height={14} style={{ marginTop: 8 }} />
+                    <Skeleton width="60%" height={14} style={{ marginTop: 4 }} />
+                </View>
+            </View>
+        );
+    }
+
+    // Type Guard for real item
+    const notification = item as NotificationItemType;
+
     // Icon Logic based on type
     const getIcon = () => {
-        switch (item.type) {
+        switch (notification.type) {
             case 'BOOKING':
             case 'PAYMENT_SUCCESS':
                 return <MaterialIcons name="sports-tennis" size={24} color={COLORS.primary} />;
@@ -30,7 +53,7 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
     };
 
     const getIconBg = () => {
-        switch (item.type) {
+        switch (notification.type) {
             case 'BOOKING':
             case 'PAYMENT_SUCCESS':
                 return '#EBF5FF'; // Light Blue
@@ -43,17 +66,11 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         try {
-            // Assume the backend sends UTC but without 'Z' (e.g. 2023-10-10T10:00:00).
-            // By appending 'Z', we force it to be treated as UTC.
-            // If the backend already includes 'Z' or offset, this might need adjustment,
-            // but usually this fixes the "treated as local" issue.
             const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
-
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
             const diffHrs = diffMs / (1000 * 60 * 60);
 
-            // Options for VN time
             const vnOptions: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Ho_Chi_Minh' };
 
             if (diffHrs < 24 && diffHrs >= -1) {
@@ -74,7 +91,7 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
             extrapolate: 'clamp',
         });
         return (
-            <TouchableOpacity onPress={() => onDelete(item.id)} style={styles.deleteAction}>
+            <TouchableOpacity onPress={() => onDelete(notification.id)} style={styles.deleteAction}>
                 <Animated.View style={[styles.deleteActionContent, { transform: [{ translateX: trans }] }]}>
                     <Ionicons name="trash-outline" size={24} color="#fff" />
                     <Text style={styles.deleteActionText}>Xóa</Text>
@@ -87,8 +104,8 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
         <View style={{ marginBottom: 12 }}>
             <Swipeable renderRightActions={renderRightActions}>
                 <TouchableOpacity
-                    style={[styles.itemContainer, !item.isRead && styles.unreadItem]}
-                    onPress={() => onPress(item)}
+                    style={[styles.itemContainer, !notification.isRead && styles.unreadItem]}
+                    onPress={() => onPress(notification)}
                     activeOpacity={0.7}
                 >
                     <View style={[styles.iconBox, { backgroundColor: getIconBg() }]}>
@@ -96,16 +113,16 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
                     </View>
                     <View style={styles.textContainer}>
                         <View style={styles.itemHeader}>
-                            <Text style={[styles.itemTitle, !item.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
-                                {item.title}
+                            <Text style={[styles.itemTitle, !notification.isRead && { fontWeight: 'bold', color: COLORS.black }]}>
+                                {notification.title}
                             </Text>
-                            <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
+                            <Text style={styles.timeText}>{formatDate(notification.createdAt)}</Text>
                         </View>
                         <Text style={styles.itemMessage} numberOfLines={2}>
-                            {item.message}
+                            {notification.message}
                         </Text>
                     </View>
-                    {!item.isRead && (
+                    {!notification.isRead && (
                         <View style={styles.unreadDot} />
                     )}
                 </TouchableOpacity>
@@ -124,10 +141,6 @@ const NotificationScreen = () => {
 
     const handlePressItem = (item: NotificationItemType) => {
         // Disabled markRead on press as requested
-        // if (!item.isRead) {
-        //    markRead(item.id);
-        // }
-        // Navigate if needed
     };
 
     const handleDelete = (id: string) => {
@@ -144,11 +157,13 @@ const NotificationScreen = () => {
         ]);
     };
 
+    const SKELETON_DATA = Array(8).fill(0).map((_, i) => ({ id: `skeleton-${i}`, isSkeleton: true } as any));
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Thông báo</Text>
-                {notifications.length > 0 && (
+                {notifications.length > 0 && !isLoading && (
                     <TouchableOpacity onPress={handleDeleteAll} style={styles.readAllBtn}>
                         <Ionicons name="trash-outline" size={20} color={COLORS.error} />
                         <Text style={[styles.readAllText, { color: COLORS.error }]}>Xóa tất cả</Text>
@@ -157,24 +172,30 @@ const NotificationScreen = () => {
             </View>
 
             <FlatList
-                data={notifications}
+                data={isLoading ? SKELETON_DATA : notifications}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <NotificationItem item={item} onPress={handlePressItem} onDelete={handleDelete} />
+                    <NotificationItem
+                        item={item}
+                        onPress={handlePressItem}
+                        onDelete={handleDelete}
+                    />
                 )}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={isLoading} onRefresh={fetchNotifications} colors={[COLORS.primary]} />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Image
-                            source={require('../../assets/images/bottom_image_1.png')}
-                            style={{ width: 150, height: 150, opacity: 0.5, marginBottom: 20 }}
-                            resizeMode="contain"
-                        />
-                        <Text style={styles.emptyText}>Bạn chưa có thông báo nào</Text>
-                    </View>
+                    !isLoading ? (
+                        <View style={styles.emptyContainer}>
+                            <Image
+                                source={require('../../assets/images/bottom_image_1.png')}
+                                style={{ width: 150, height: 150, opacity: 0.5, marginBottom: 20 }}
+                                resizeMode="contain"
+                            />
+                            <Text style={styles.emptyText}>Bạn chưa có thông báo nào</Text>
+                        </View>
+                    ) : null
                 }
             />
         </SafeAreaView>

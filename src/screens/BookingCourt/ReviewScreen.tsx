@@ -25,6 +25,7 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Skeleton } from '../../components/common/Skeleton';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -448,7 +449,20 @@ export default function ReviewScreen() {
                 {/* Reviews List */}
                 <View style={styles.reviewsList}>
                     {loading ? (
-                        <ActivityIndicator size="large" color="#3B9AFF" style={{ marginTop: 20 }} />
+                        Array(3).fill(0).map((_, i) => (
+                            <View key={`skeleton-${i}`} style={{ padding: 16 }}>
+                                <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+                                    <Skeleton width={40} height={40} borderRadius={20} />
+                                    <View style={{ marginLeft: 10, flex: 1 }}>
+                                        <Skeleton width={120} height={14} style={{ marginBottom: 4 }} />
+                                        <Skeleton width={80} height={12} />
+                                    </View>
+                                </View>
+                                <Skeleton width="100%" height={14} style={{ marginBottom: 4 }} />
+                                <Skeleton width="80%" height={14} style={{ marginBottom: 8 }} />
+                                <Skeleton width={100} height={80} borderRadius={4} />
+                            </View>
+                        ))
                     ) : (
                         reviews.map(item => renderReviewItem({ item }))
                     )}

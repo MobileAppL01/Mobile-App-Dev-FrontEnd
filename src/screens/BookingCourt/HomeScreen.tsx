@@ -36,12 +36,30 @@ interface Court {
   image: any;
   phone?: string;
   description?: string;
+  isSkeleton?: boolean;
 }
 import { getCourtImageSource } from '../../utils/imageHelper';
+import { Skeleton } from '../../components/common/Skeleton';
 
 const ITEMS_PER_PAGE = 6;
 
 const CourtCard = React.memo(({ item, onPress }: { item: Court, onPress: (item: Court) => void }) => {
+  if (item.isSkeleton) {
+    return (
+      <View style={[styles.cardContainer, { backgroundColor: 'white' }]}>
+        <View style={styles.imageContainer}>
+          <Skeleton width="100%" height="100%" />
+        </View>
+        <View style={styles.cardContent}>
+          <Skeleton width="80%" height={16} style={{ marginBottom: 8 }} />
+          <Skeleton width="60%" height={12} style={{ marginBottom: 8 }} />
+          <Skeleton width="40%" height={12} style={{ marginBottom: 16 }} />
+          <Skeleton width="70%" height={28} borderRadius={4} />
+        </View>
+      </View>
+    );
+  }
+
   const [imageSource, setImageSource] = useState(getCourtImageSource(item.image?.uri));
   const [hasError, setHasError] = useState(false);
 
@@ -526,16 +544,18 @@ export default function HomeScreen() {
     </Modal>
   );
 
+  const SKELETON_DATA: Court[] = Array(6).fill(0).map((_, i) => ({ id: -1 - i, name: '', address: '', rating: 0, pricePerHour: 0, image: null, isSkeleton: true } as unknown as Court));
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={currentCourts}
+        data={isLoading ? SKELETON_DATA : currentCourts}
         renderItem={renderCourtItem}
         keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         ListHeaderComponent={renderHeader()}
-        ListFooterComponent={renderPagination}
+        ListFooterComponent={!isLoading ? renderPagination : null}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
