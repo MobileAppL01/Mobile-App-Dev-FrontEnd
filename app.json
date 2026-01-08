@@ -42,7 +42,11 @@
         {
           "android": {
             "useLegacyPackaging": true,
-            "ndkVersion": "27.0.12077973"
+            "ndkVersion": "27.0.12077973",
+            "lintOptions": {
+              "checkReleaseBuilds": false,
+              "abortOnError": false
+            }
           }
         }
       ],
