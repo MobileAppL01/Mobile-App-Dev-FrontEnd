@@ -31,7 +31,13 @@ const PromotionFormModal: React.FC<PromoFormProps> = ({
   // State nội bộ
   const [code, setCode] = useState("");
   const [discountValue, setDiscountValue] = useState("");
-  const [startDate, setStartDate] = useState("2026-01-05");
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-CA");
+  };
+
+  // Sử dụng trong state:
+  const [startDate, setStartDate] = useState(formatDate(new Date()));
+
   const [endDate, setEndDate] = useState("2026-01-10");
 
   // Reset form khi đóng mở
