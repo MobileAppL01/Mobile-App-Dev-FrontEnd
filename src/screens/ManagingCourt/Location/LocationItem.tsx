@@ -138,7 +138,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
       <View style={styles.promoLeftBorder} />
       <View style={{ flex: 1 }}>
         <Text style={styles.promoCode}>
-          {promo.code}- {promo.id}
+          {promo.code}
         </Text>
         <Text style={styles.promoDate}>
           {promo.startDate} - {promo.endDate}
