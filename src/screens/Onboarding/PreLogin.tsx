@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StackScreenProps } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { COLORS, SIZES, AUTH_STYLES } from "../../constants/theme";
-import LogoDark from "../../assets/logos/logo_dark.svg";
+import LogoLight from "../../assets/logos/logo_light.svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +25,7 @@ const PreLogin = ({ navigation }: Props) => {
       <StatusBar barStyle="light-content" />
 
       <View style={styles.topSection}>
-        <LogoDark width={300} height={120} />
+        <LogoLight width={300} height={120} />
       </View>
 
       <View style={styles.middleSection}>

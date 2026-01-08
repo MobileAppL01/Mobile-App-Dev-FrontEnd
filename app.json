@@ -17,7 +17,7 @@
     "android": {
       "package": "com.bookinton.mobile",
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/icons/adaptive-icon.png",
+        "foregroundImage": "./src/assets/icons/app_icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

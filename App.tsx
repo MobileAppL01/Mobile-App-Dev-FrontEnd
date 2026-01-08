@@ -6,12 +6,20 @@ import * as Sentry from '@sentry/react-native';
 import NotificationToast from './src/components/NotificationToast';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AdModal } from './src/components/common/AdModal';
+import { Platform } from 'react-native'; // Import Platform
+import { authService } from './src/services/authService'; // Import authService
+
+import Constants from 'expo-constants'; // Import Constants
 
 // 1. Import biến navigationIntegration từ RootNavigator
 import RootNavigator, { navigationIntegration } from './src/navigation/RootNavigator';
 import * as Notifications from 'expo-notifications';
+import { SafeAreaView } from 'react-native';
 
 // --- NOTIFICATIONS CONFIG ---
+// Check execution environment
+const isExpoGo = Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -21,6 +29,44 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
+
+async function registerForPushNotificationsAsync() {
+  // Bỏ qua nếu là Expo Go (vì không hỗ trợ push notifications trên Android SDK 53+ trong Expo Go)
+  if (isExpoGo) {
+    console.log("Expo Go detected. Skipping push notification registration.");
+    return;
+  }
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  if (finalStatus !== 'granted') {
+    console.log('Failed to get push token for push notification!');
+    return;
+  }
+
+  const projectId = 'a703c044-9af5-46ed-bf0a-271050cfda85';
+
+  try {
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    console.log("Push Token:", token);
+    return token;
+  } catch (e) {
+    console.log("Error getting push token", e);
+  }
+}
 
 // --- CẤU HÌNH SENTRY ---
 Sentry.init({
@@ -73,6 +119,14 @@ function App() {
         level: 'info',
       });
 
+      // Register Push Token
+      registerForPushNotificationsAsync().then(pushToken => {
+        if (pushToken) {
+          console.log("Updating push token to backend...");
+          authService.updatePushToken(pushToken).catch(err => console.log("Update token failed", err));
+        }
+      });
+
     } else {
       // --- KHI LOGOUT / CHƯA LOGIN ---
       Sentry.setUser(null);
@@ -84,10 +138,9 @@ function App() {
   const [isAdVisible, setIsAdVisible] = React.useState(false);
 
   useEffect(() => {
-    // Show ad every 60 seconds (60000ms)
     const interval = setInterval(() => {
       setIsAdVisible(true);
-    }, 60000);
+    }, 120000);
 
     return () => clearInterval(interval);
   }, []);
@@ -100,5 +153,11 @@ function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = {
+  container: {
+    flex: 1,
+  }
+};
 
 export default Sentry.wrap(App);

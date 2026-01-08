@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 // import AdminUserListScreen from '../screens/Admin/AdminUserListScreen';
 // import AdminCourtListScreen from '../screens/Admin/AdminCourtListScreen';
-import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import AdminUserListScreen from '../screens/Admin/AdminUserListScreen';
+import AdminDashboardScreen from '../screens/Admin/AdminDashboardScreen';
+import AdminProfileScreen from '../screens/Admin/AdminProfileScreen';
 
 // --- SỬA 1: Định nghĩa kiểu cho Props của Placeholder ---
 // Component trong Navigator nhận prop 'route' chứa params
@@ -48,12 +49,12 @@ const AdminTabs = () => {
         },
         tabBarIcon: ({ focused, color, size }) => {
           // --- SỬA 2: Khai báo kiểu 'any' cho iconName để tránh lỗi string literal ---
-          let iconName: any = 'help-circle'; 
+          let iconName: any = 'help-circle';
 
           if (route.name === 'Người dùng') {
             iconName = focused ? 'people' : 'people-outline';
-          } else if (route.name === 'Tất cả sân') {
-            iconName = focused ? 'layers' : 'layers-outline';
+          } else if (route.name === 'Thống kê') {
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'Thông Tin') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -62,15 +63,19 @@ const AdminTabs = () => {
         },
       })}
     >
-      <Tab.Screen 
-        name="Người dùng" 
-        component={AdminUserListScreen} 
+      <Tab.Screen
+        name="Thống kê"
+        component={AdminDashboardScreen}
       />
 
+      <Tab.Screen
+        name="Người dùng"
+        component={AdminUserListScreen}
+      />
 
-      <Tab.Screen 
-        name="Thông Tin" 
-        component={UserProfileScreen} 
+      <Tab.Screen
+        name="Thông Tin"
+        component={AdminProfileScreen}
       />
     </Tab.Navigator>
   );

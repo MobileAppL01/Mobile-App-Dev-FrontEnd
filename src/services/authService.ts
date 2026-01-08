@@ -53,5 +53,10 @@ export const authService = {
     getProfile: async (userId: number) => {
         const response = await axiosInstance.get(`/users/${userId}`);
         return response.data;
+    },
+
+    updatePushToken: async (pushToken: string) => {
+        const response = await axiosInstance.post('/users/push-token', { pushToken });
+        return response.data;
     }
 };

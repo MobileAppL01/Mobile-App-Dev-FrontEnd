@@ -30,6 +30,7 @@ import ResetPasswordScreen from "../screens/Authentication/ResetPasswordScreen";
 import PaymentWebViewScreen from "../screens/Payment/PaymentWebViewScreen";
 import AboutUsScreen from "../screens/Profile/AboutUsScreen";
 import AdminTabs from "./AdminTabs";
+import AdminOwnerRevenueScreen from "../screens/Admin/AdminOwnerRevenueScreen";
 export type RootStackParamList = {
   Splash: undefined;
   OnboardingFirst: undefined;
@@ -52,6 +53,7 @@ export type RootStackParamList = {
   PaymentQR: { booking: any; totalPrice: number; bankInfo: any };
   AboutUs: undefined;
   AdminTabs: undefined;
+  AdminOwnerRevenue: { ownerId: number; ownerName: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -85,7 +87,7 @@ export default function RootNavigator() {
             // 🟢 TRƯỜNG HỢP 1: LÀ ADMIN
             <>
               <Stack.Screen name="AdminTabs" component={AdminTabs} />
-              {/* Nếu Admin cần xem chi tiết sân hay các màn hình khác, hãy copy các Stack.Screen chung vào đây */}
+              <Stack.Screen name="AdminOwnerRevenue" component={AdminOwnerRevenueScreen} />
             </>
           ) : userRole === "ROLE_OWNER" ? (
             <>
