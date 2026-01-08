@@ -1,5 +1,12 @@
 const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
+// Polyfill for Node < 20 (fixes "configs.toReversed is not a function")
+if (!Array.prototype.toReversed) {
+  Array.prototype.toReversed = function() {
+    return this.slice().reverse();
+  };
+}
+
 const config = getSentryExpoConfig(__dirname);
 
 const { transformer, resolver } = config;
