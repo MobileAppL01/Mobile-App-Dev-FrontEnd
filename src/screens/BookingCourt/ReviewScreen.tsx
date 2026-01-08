@@ -203,7 +203,25 @@ export default function ReviewScreen() {
             if (editTarget) {
                 // EDIT MODE
                 if (editTarget.type === 'REVIEW') {
+                    // Update content
                     await reviewService.updateReview(Number(editTarget.id), myRating, myComment);
+
+                    // Handle Images if changed? 
+                    // Current implementation of updateReview doesn't handle images.
+                    // If we want to update images, we usually delete old ones and upload new ones or append.
+                    // For simplicity, let's assume we just want to upload NEW images if any selected in Edit mode?
+                    // But selectedImages is initialized with existing images (URLs).
+                    // Distinguish between new URIs (local) and old URLs (http).
+
+                    const newImages = selectedImages.filter(img => !img.startsWith('http'));
+                    if (newImages.length > 0) {
+                        const imageFiles = newImages.map(uri => ({
+                            uri: uri,
+                            fileName: `review_${Date.now()}.jpg`,
+                            type: 'image/jpeg'
+                        }));
+                        await reviewService.uploadReviewImages(Number(editTarget.id), imageFiles);
+                    }
                 } else {
                     await reviewService.updateComment(Number(editTarget.id), myComment);
                 }
@@ -228,7 +246,18 @@ export default function ReviewScreen() {
                     return;
                 }
                 console.log("Creating review for location:", locationId, "Rating:", myRating);
-                await reviewService.createReview(locationId, myRating, myComment);
+                const newReview = await reviewService.createReview(locationId, myRating, myComment);
+
+                // Upload Images
+                if (selectedImages.length > 0) {
+                    const imageFiles = selectedImages.map(uri => ({
+                        uri: uri,
+                        fileName: `review_${Date.now()}.jpg`,
+                        type: 'image/jpeg'
+                    }));
+                    await reviewService.uploadReviewImages(Number(newReview.id), imageFiles);
+                }
+
                 showNotification("Gửi đánh giá thành công!", "success");
             }
 

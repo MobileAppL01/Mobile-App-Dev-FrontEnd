@@ -242,7 +242,7 @@ export default function CourtDetailScreen() {
                                     <Text style={styles.cellContentText}>Mặc định</Text>
                                 </View>
                                 <View style={[styles.blueCellContent, { flex: 0.5 }]}>
-                                    <Text style={styles.cellContentText}>50000 đ</Text>
+                                    <Text style={styles.cellContentText}>{courtData.pricePerHour ? courtData.pricePerHour.toLocaleString('vi-VN') : 50000} đ</Text>
                                 </View>
                             </View>
                         </View>
@@ -368,7 +368,7 @@ export default function CourtDetailScreen() {
                 <View style={styles.footerContainer}>
                     <View style={styles.footerPriceInfo}>
                         <Text style={styles.footerPriceLabel}>Mặc định</Text>
-                        <Text style={styles.footerPriceValue}>50.000đ<Text style={styles.perHour}>/giờ</Text></Text>
+                        <Text style={styles.footerPriceValue}>{courtData.pricePerHour ? courtData.pricePerHour.toLocaleString('vi-VN') : 50000}đ<Text style={styles.perHour}>/giờ</Text></Text>
                     </View>
                     <TouchableOpacity
                         style={[styles.bookNowButton, courtData.status === 'MAINTENANCE' && { backgroundColor: '#ccc' }]}

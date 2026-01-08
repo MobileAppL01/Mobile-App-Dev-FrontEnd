@@ -19,6 +19,8 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import * as ImagePicker from 'expo-image-picker';
+import { bookingService } from '../../services/bookingService';
 
 
 // --- Component con InfoField (Đã cập nhật logic xử lý Date và Edit) ---
@@ -70,7 +72,8 @@ export default function UserProfileScreen() {
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
-        phone: ""
+        phone: "",
+        avatar: ""
     });
 
     const [isChangePasswordVisible, setIsChangePasswordVisible] = useState(false);
@@ -86,20 +89,70 @@ export default function UserProfileScreen() {
             setFormData({
                 fullName: user.fullName || "",
                 email: user.email || "",
-                phone: user.phone || ""
+                phone: user.phone || "",
+                avatar: user.avatar || ""
             });
         }
     }, [user]);
+
+    const [bookingCount, setBookingCount] = useState(0);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const bookings = await bookingService.getMyBookings();
+                if (bookings && Array.isArray(bookings)) {
+                    setBookingCount(bookings.length);
+                }
+            } catch (error) {
+                console.log("Error fetching booking stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
 
     const displayUser = {
         name: user?.fullName || "Người dùng",
         email: user?.email || "",
         avatar: (user?.avatar && user.avatar.trim() !== "") ? user.avatar : "https://i.pravatar.cc/300",
         phone: user?.phone || "",
-        gender: "Nam",
-        dob: "01/01/2000",
-        bookings: 0,
-        points: 0
+        // Backend not supporting gender/dob yet
+        bookings: bookingCount,
+        points: 0 // Points system not yet implemented
+    };
+
+    const pickImage = async () => {
+        if (!isEditing) return;
+
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setIsLoading(true);
+                try {
+                    const response = await authService.uploadAvatar(result.assets[0]);
+                    if (response.url) {
+                        setFormData(prev => ({ ...prev, avatar: response.url }));
+                        // Update User store immediately to reflect change in UI
+                        // Note: If backend doesn't support avatar update in updateProfile, 
+                        // this change will be lost on next fetch unless we handle it locally or fix backend.
+                        // (I have fixed backend DTO already)
+                        updateUser({ ...user, avatar: response.url });
+                    }
+                } catch (error) {
+                    Alert.alert("Lỗi", "Không thể tải ảnh lên");
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        } catch (error) {
+            console.log("Image picker error", error);
+        }
     };
 
     const handleSave = async () => {
@@ -113,7 +166,8 @@ export default function UserProfileScreen() {
             const updatePayload = {
                 fullName: formData.fullName,
                 email: formData.email,
-                phone: formData.phone
+                phone: formData.phone,
+                avatar: formData.avatar // Added avatar field
             };
 
             await authService.updateProfile(updatePayload);
@@ -122,7 +176,8 @@ export default function UserProfileScreen() {
             updateUser({
                 fullName: formData.fullName,
                 phone: formData.phone,
-                email: formData.email
+                email: formData.email,
+                avatar: formData.avatar
             });
 
             showNotification("Cập nhật hồ sơ thành công", "success");
@@ -142,7 +197,8 @@ export default function UserProfileScreen() {
             setFormData({
                 fullName: user.fullName || "",
                 email: user.email || "",
-                phone: user.phone || ""
+                phone: user.phone || "",
+                avatar: user.avatar || ""
             });
         }
         setIsEditing(false);
@@ -207,7 +263,21 @@ export default function UserProfileScreen() {
                 {/* --- HEADER --- */}
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
-                        <Image source={{ uri: displayUser.avatar }} style={styles.avatar} />
+                        <TouchableOpacity onPress={pickImage} disabled={!isEditing}>
+                            <Image source={{ uri: isEditing && formData.avatar ? formData.avatar : displayUser.avatar }} style={styles.avatar} />
+                            {isEditing && (
+                                <View style={{
+                                    position: 'absolute',
+                                    right: 15,
+                                    bottom: 0,
+                                    backgroundColor: 'white',
+                                    borderRadius: 12,
+                                    padding: 4
+                                }}>
+                                    <Ionicons name="camera" size={16} color="#333" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
 
                         <View style={styles.headerInfo}>
                             <Text style={styles.headerTitle}>Hồ sơ của tôi</Text>
@@ -279,11 +349,13 @@ export default function UserProfileScreen() {
                             keyboardType="phone-pad"
                         />
 
+                        {/* Backend User Entity does not support Gender/DOB yet. Hiding for now to avoid hardcoding.
                         <View style={styles.row}>
                             <InfoField label="Giới tính" value={displayUser.gender} flex={0.45} />
                             <View style={{ width: 15 }} />
                             <InfoField label="Ngày sinh" value={displayUser.dob} flex={0.55} />
-                        </View>
+                        </View> 
+                        */}
                     </View>
 
                     {/* --- ACTIONS --- */}

@@ -100,6 +100,22 @@ export const reviewService = {
         return mapToUIReview(response.data);
     },
 
+    uploadReviewImages: async (reviewId: number, images: any[]): Promise<UIReview> => {
+        const formData = new FormData();
+        images.forEach((img) => {
+            formData.append('files', {
+                uri: img.uri,
+                name: img.fileName || 'review_img.jpg',
+                type: img.type || 'image/jpeg'
+            } as any);
+        });
+
+        const response = await axiosInstance.post<ReviewDTO>(`/reviews/${reviewId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return mapToUIReview(response.data);
+    },
+
     createComment: async (reviewId: number, content: string, parentCommentId?: number): Promise<UIReply> => {
         const payload: any = { reviewId, content };
         if (parentCommentId) payload.parentCommentId = parentCommentId;
