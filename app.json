@@ -46,8 +46,15 @@
           }
         }
       ],
-      
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native-mobile-app",
+          "organization": "hcmut-nu"
+        }
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"
