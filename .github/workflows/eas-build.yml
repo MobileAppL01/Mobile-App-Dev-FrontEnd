@@ -30,13 +30,13 @@ jobs:
           token: ${{ secrets.EAS_ACCESS_TOKEN }}
 
       - name: EAS Build
-        run: eas build --platform android --profile production --non-interactive
+        run: eas build --platform android --profile production --non-interactive --local --output=app-release.apk
 
-      # build iOS:
-      #   run: eas build --platform ios --profile production --non-interactive
-
-      # Build cả hai:
-      #   run: eas build --platform all --profile production --non-interactive
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app-release.apk
 
   publish:
     needs: build
