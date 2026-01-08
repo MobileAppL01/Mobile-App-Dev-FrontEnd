@@ -4,4 +4,5 @@ export interface LocationDTO {
     address: string;
     rating: number;
     pricePerHour: number;
+    status?: string;
 }

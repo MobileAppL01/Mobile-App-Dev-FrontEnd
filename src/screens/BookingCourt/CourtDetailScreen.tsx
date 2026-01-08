@@ -7,7 +7,9 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
-    Linking
+    Platform,
+    Linking,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,9 +38,11 @@ export default function CourtDetailScreen() {
             getCourtImageSource(court?.image?.uri),
             require("../../assets/images/court2.png"),
             require("../../assets/images/court1.png")
-        ]
+        ],
+        status: court?.status
     };
 
+    const scrollViewRef = useRef<ScrollView>(null);
     const [activeSlide, setActiveSlide] = useState(0);
 
     const onScroll = (event: any) => {
@@ -46,6 +50,18 @@ export default function CourtDetailScreen() {
         if (slide !== activeSlide) {
             setActiveSlide(slide);
         }
+    };
+
+    const scrollCarousel = (direction: 'next' | 'prev') => {
+        if (!scrollViewRef.current) return;
+        let nextSlide = activeSlide;
+        if (direction === 'next') {
+            nextSlide = activeSlide < courtData.images.length - 1 ? activeSlide + 1 : 0;
+        } else {
+            nextSlide = activeSlide > 0 ? activeSlide - 1 : courtData.images.length - 1;
+        }
+        scrollViewRef.current.scrollTo({ x: nextSlide * width, animated: true });
+        setActiveSlide(nextSlide);
     };
 
     const handleBookNow = () => {
@@ -69,6 +85,7 @@ export default function CourtDetailScreen() {
                     {/* Image Carousel */}
                     <View style={styles.carouselContainer}>
                         <ScrollView
+                            ref={scrollViewRef}
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={false}
@@ -101,16 +118,13 @@ export default function CourtDetailScreen() {
                             <View style={[styles.iconCircle, { marginLeft: 10 }]}>
                                 <Ionicons name="location-outline" size={20} color="#3B9AFF" />
                             </View>
-                            <TouchableOpacity style={styles.bookOverlayButton} onPress={handleBookNow}>
-                                <Text style={styles.bookOverlayText}>Đặt lịch</Text>
-                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.imageOverlayNav}>
-                            <TouchableOpacity style={styles.navCircle} onPress={() => { /* prev */ }}>
+                            <TouchableOpacity style={styles.navCircle} onPress={() => scrollCarousel('prev')}>
                                 <Ionicons name="chevron-back" size={16} color="white" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.navCircle} onPress={() => { /* next */ }}>
+                            <TouchableOpacity style={styles.navCircle} onPress={() => scrollCarousel('next')}>
                                 <Ionicons name="chevron-forward" size={16} color="white" />
                             </TouchableOpacity>
                         </View>
@@ -144,11 +158,63 @@ export default function CourtDetailScreen() {
                         </TouchableOpacity>
 
                         <View style={styles.linkRow}>
+                            {/* ... existing link row content ... */}
                             <Text style={styles.websiteText}>Website: <Text style={{ color: '#333' }}>{courtData.website}</Text></Text>
                             <TouchableOpacity>
                                 <Text style={styles.linkAction}>Quy định</Text>
                             </TouchableOpacity>
                         </View>
+
+                        {/* MAP SECTION */}
+                        <TouchableOpacity
+                            style={styles.mapPreview}
+                            activeOpacity={0.9}
+                            onPress={() => {
+                                Alert.alert(
+                                    "Truy cập bản đồ",
+                                    "Bạn có muốn mở bản đồ để xem đường đi đến sân này không?",
+                                    [
+                                        { text: "Bỏ qua", style: "cancel" },
+                                        {
+                                            text: "Mở bản đồ",
+                                            onPress: () => {
+                                                const query = encodeURIComponent(courtData.address || "Sân cầu lông");
+                                                const url = Platform.select({
+                                                    ios: `maps:0,0?q=${query}`,
+                                                    android: `geo:0,0?q=${query}`
+                                                });
+                                                // Fallback to Google Maps Web if scheme fails (though geo/maps usually work)
+                                                const webUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+                                                Linking.canOpenURL(url!).then(supported => {
+                                                    if (supported) {
+                                                        Linking.openURL(url!);
+                                                    } else {
+                                                        Linking.openURL(webUrl);
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    ]
+                                );
+                            }}
+                        >
+                            {/* Fake Map Background */}
+                            <View style={styles.fakeMapBg}>
+                                {/* Grid lines or simple pattern simulation */}
+                                <View style={styles.mapGridVer} />
+                                <View style={styles.mapGridHor} />
+                                <Ionicons name="map" size={40} color="#CBD5E1" style={{ opacity: 0.5 }} />
+                            </View>
+
+                            {/* Pin & Call To Action */}
+                            <View style={styles.mapOverlayCenter}>
+                                <Ionicons name="location-sharp" size={32} color="#EF4444" />
+                                <View style={styles.mapTag}>
+                                    <Text style={styles.mapTagText}>Xem vị trí</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
 
                         <Text style={styles.sectionTitle}>Mô tả</Text>
                         <Text style={styles.descriptionText}>
@@ -176,69 +242,7 @@ export default function CourtDetailScreen() {
                                     <Text style={styles.cellContentText}>Mặc định</Text>
                                 </View>
                                 <View style={[styles.blueCellContent, { flex: 0.5 }]}>
-                                    <Text style={styles.cellContentText}>0 đ</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* CONG NHAN */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionHeaderBlue}>CÔNG NHÂN</Text>
-                        <View style={styles.complexTable}>
-                            {/* Header */}
-                            <View style={styles.complexHeader}>
-                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Thứ</Text>
-                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Khung giờ</Text>
-                                <Text style={[styles.complexHeaderText, { flex: 1 }]}>Cố định</Text>
-                                <Text style={[styles.complexHeaderText, { flex: 1, borderRightWidth: 0 }]}>Vãng lai</Text>
-                            </View>
-                            {/* Row 1 */}
-                            <View style={styles.complexRow}>
-                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>Mặc định</Text></View>
-                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>—</Text></View>
-                                <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
-                                <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
-                            </View>
-                            {/* Row 2 Group T2-T6 */}
-                            <View style={styles.complexRow}>
-                                <View style={[styles.complexCellContainer, { flex: 1 }]}>
-                                    <Text style={styles.complexCellText}>T2 – T6</Text>
-                                </View>
-                                <View style={{ flex: 3 }}>
-                                    <View style={styles.innerRow}>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–16h</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>45.000 đ</Text></View>
-                                    </View>
-                                    <View style={styles.innerRow}>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>16h–21h</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>90.000 đ</Text></View>
-                                    </View>
-                                    <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>21h–24h</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
-                                    </View>
-                                </View>
-                            </View>
-                            {/* Row 3 Group T7-CN */}
-                            <View style={[styles.complexRow, { borderBottomWidth: 0 }]}>
-                                <View style={[styles.complexCellContainer, { flex: 1 }]}>
-                                    <Text style={styles.complexCellText}>T7 – CN</Text>
-                                </View>
-                                <View style={{ flex: 3 }}>
-                                    <View style={styles.innerRow}>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>5h–9h</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>80.000 đ</Text></View>
-                                    </View>
-                                    <View style={[styles.innerRow, { borderBottomWidth: 0 }]}>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>9h–16h</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1 }]}><Text style={styles.complexCellText}>60.000 đ</Text></View>
-                                        <View style={[styles.complexCellContainer, { flex: 1, borderRightWidth: 0 }]}><Text style={styles.complexCellText}>70.000 đ</Text></View>
-                                    </View>
+                                    <Text style={styles.cellContentText}>50000 đ</Text>
                                 </View>
                             </View>
                         </View>
@@ -361,9 +365,17 @@ export default function CourtDetailScreen() {
                 </ScrollView>
 
                 {/* Sticky Footer */}
-                <View style={[styles.stickyFooter, { marginBottom: 10 }]}>
-                    <TouchableOpacity style={styles.bookNowButton} onPress={handleBookNow}>
-                        <Text style={styles.bookNowText}>ĐẶT LỊCH NGAY</Text>
+                <View style={styles.footerContainer}>
+                    <View style={styles.footerPriceInfo}>
+                        <Text style={styles.footerPriceLabel}>Mặc định</Text>
+                        <Text style={styles.footerPriceValue}>50.000đ<Text style={styles.perHour}>/giờ</Text></Text>
+                    </View>
+                    <TouchableOpacity
+                        style={[styles.bookNowButton, courtData.status === 'MAINTENANCE' && { backgroundColor: '#ccc' }]}
+                        onPress={handleBookNow}
+                        disabled={courtData.status === 'MAINTENANCE'}
+                    >
+                        <Text style={styles.bookNowText}>{courtData.status === 'MAINTENANCE' ? "Bảo trì" : "ĐẶT LỊCH NGAY"}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -656,7 +668,7 @@ const styles = StyleSheet.create({
         marginRight: 6,
         textDecorationLine: 'underline',
     },
-    stickyFooter: {
+    footerContainer: {
         padding: 16,
         backgroundColor: 'white',
         borderTopWidth: 1,
@@ -667,21 +679,102 @@ const styles = StyleSheet.create({
             width: 0,
             height: -2,
         },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.05,
         shadowRadius: 4,
-        elevation: 5,
+        elevation: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingBottom: Platform.OS === 'ios' ? 24 : 16 // Handle safe area properly
+    },
+    footerPriceInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    footerPriceLabel: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 2
+    },
+    footerPriceValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#3B9AFF',
+    },
+    perHour: {
+        fontSize: 12,
+        color: '#999',
+        fontWeight: 'normal'
     },
     bookNowButton: {
-        backgroundColor: '#F59E0B',
-        borderRadius: 8,
-        paddingVertical: 14,
+        backgroundColor: '#3B9AFF', // Unified blue theme
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: "#3B9AFF",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4
     },
     bookNowText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 16,
-        textTransform: 'uppercase',
+        fontSize: 15,
+    },
+    // Map Styles
+    mapPreview: {
+        height: 140,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginVertical: 12,
+        backgroundColor: '#F1F5F9', // Light Slate
+        position: 'relative',
+        borderWidth: 1,
+        borderColor: '#E2E8F0'
+    },
+    fakeMapBg: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+    },
+    mapGridVer: {
+        position: 'absolute',
+        width: 1,
+        height: '100%',
+        backgroundColor: '#E2E8F0',
+        left: '50%'
+    },
+    mapGridHor: {
+        position: 'absolute',
+        height: 1,
+        width: '100%',
+        backgroundColor: '#E2E8F0',
+        top: '50%'
+    },
+    mapOverlayCenter: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    mapTag: {
+        marginTop: 4,
+        backgroundColor: 'white',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2
+    },
+    mapTagText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#3B9AFF'
     }
 });

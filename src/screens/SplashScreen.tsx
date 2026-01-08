@@ -5,7 +5,7 @@ import { RootStackParamList } from "../navigation/RootNavigator";
 import { COLORS } from "../constants/theme";
 import { useAuthStore } from "../store/useAuthStore";
 
-import LogoLight from "../assets/logos/logo_light.svg";
+import LogoDark from "../assets/logos/logo_dark.svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,7 +30,7 @@ const SplashScreen = ({ navigation }: Props) => {
 
             {/* Top Logo */}
             <View style={styles.logoContainer}>
-                <LogoLight width="100%" height="100%" />
+                <LogoDark width="100%" height="100%" />
             </View>
 
             {/* Center/Bottom Images */}

@@ -61,10 +61,13 @@ export default function BookingTimeSelectionScreen() {
         // Handled by useFocusEffect
     }, []);
 
-    // When courts load, auto-select first court if none selected
+    // When courts load, auto-select first available court if none selected
     useEffect(() => {
         if (courts.length > 0 && selectedCourtId === null) {
-            setSelectedCourtId(courts[0].id);
+            const availableCourt = courts.find(c => c.status !== 'MAINTENANCE');
+            if (availableCourt) {
+                setSelectedCourtId(availableCourt.id);
+            }
         }
     }, [courts]);
 
@@ -95,7 +98,10 @@ export default function BookingTimeSelectionScreen() {
 
             // Pre-select first court if needed
             if (!selectedCourtId && courtsData.length > 0) {
-                setSelectedCourtId(courtsData[0].id);
+                const availableCourt = courtsData.find((c: any) => c.status !== 'MAINTENANCE');
+                if (availableCourt) {
+                    setSelectedCourtId(availableCourt.id);
+                }
             }
 
             const dateStr = formatDateISO(selectedDate);
@@ -181,16 +187,33 @@ export default function BookingTimeSelectionScreen() {
 
     const renderCourtTab = (court: any) => {
         const isSelected = selectedCourtId === court.id;
+        const isMaintenance = court.status === 'MAINTENANCE';
+
         return (
             <TouchableOpacity
                 key={court.id}
-                style={[styles.courtTab, isSelected && styles.courtTabActive]}
+                style={[
+                    styles.courtTab,
+                    isSelected && styles.courtTabActive,
+                    isMaintenance && styles.courtTabDisabled
+                ]}
                 onPress={() => {
+                    if (isMaintenance) {
+                        // Double check redundant if disabled, but safe
+                        return;
+                    }
                     setSelectedCourtId(court.id);
                     setSelectedSlots([]); // Clear slots when switching court
                 }}
+                disabled={isMaintenance}
             >
-                <Text style={[styles.courtTabText, isSelected && styles.courtTabTextActive]}>{court.name}</Text>
+                <Text style={[
+                    styles.courtTabText,
+                    isSelected && styles.courtTabTextActive,
+                    isMaintenance && styles.courtTabTextDisabled
+                ]}>
+                    {court.name} {isMaintenance && "(Bảo trì)"}
+                </Text>
             </TouchableOpacity>
         );
     };
@@ -484,6 +507,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         color: 'white'
+    },
+    courtTabDisabled: {
+        backgroundColor: '#E0E0E0',
+        borderColor: '#CCC',
+        opacity: 0.6
+    },
+    courtTabTextDisabled: {
+        color: '#999'
     },
 
     // Footer

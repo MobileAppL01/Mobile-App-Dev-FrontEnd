@@ -3,91 +3,98 @@ import { StyleSheet } from 'react-native';
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#F9FAFB', // Light gray background
     },
     // --- Styles cho Header ---
     headerContainer: {
-        backgroundColor: '#42A5F5',
-        paddingTop: 50, // Padding cho tai thỏ
-        paddingBottom: 25,
-        paddingHorizontal: 20,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
+        backgroundColor: 'white',
+        paddingTop: 50, // Safe Area padding roughly (or use SafeAreaView in component)
+        paddingBottom: 16,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        // Removing rounded corners for a standard app header feel
     },
     headerTitle: {
-        color: 'white',
-        fontSize: 20,
+        color: '#111827', // Dark text
+        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 5,
+        marginBottom: 4,
     },
     headerSubtitle: {
-        color: 'rgba(255,255,255,0.9)',
+        color: '#6B7280', // Gray text
         fontSize: 14,
     },
 
     // --- Styles cho Tab Switcher ---
     tabContainer: {
         alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 10,
+        marginVertical: 16,
     },
     tabWrapper: {
         flexDirection: 'row',
-        backgroundColor: 'white',
+        backgroundColor: '#F3F4F6', // Lighter gray for tab bg
         borderRadius: 25,
-        borderWidth: 1,
-        borderColor: '#333',
+        borderWidth: 0, // No border
         width: '90%',
-        padding: 2,
+        padding: 4,
     },
     tabButton: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 8,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 22,
     },
     activeTab: {
-        backgroundColor: '#64B5F6',
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     tabText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#333',
+        color: '#6B7280',
     },
     activeTabText: {
-        color: 'white',
+        color: '#3B82F6', // Brand Blue
         fontWeight: 'bold',
     },
 
     // --- Styles cho Card ---
     listContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingHorizontal: 16,
+        paddingBottom: 24,
     },
     card: {
         backgroundColor: 'white',
-        borderRadius: 15,
-        padding: 15,
-        marginBottom: 15,
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
         borderWidth: 1,
-        borderColor: '#EEEEEE'
+        borderColor: '#E5E7EB'
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginBottom: 15,
+        marginBottom: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
     },
     iconContainer: {
-        width: 45,
-        height: 45,
-        borderRadius: 22.5,
-        backgroundColor: '#2196F3',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#EFF6FF', // Light blue bg
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -95,56 +102,59 @@ const styles = StyleSheet.create({
     headerTextContainer: {
         flex: 1,
         justifyContent: 'center',
-        marginRight: 5,
     },
     placeName: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 2,
     },
     addressName: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 13,
+        color: '#6B7280',
     },
     statusBadge: {
-        paddingHorizontal: 8,
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 10,
+        borderRadius: 12,
+        marginLeft: 8,
     },
     statusText: {
         color: 'white',
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 'bold',
+        textTransform: 'uppercase'
     },
 
     // --- Styles cho phần Body của Card ---
     cardBody: {
-        paddingLeft: 5,
+        paddingLeft: 0, // removed indent
+        gap: 8,
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
     },
     infoIconWidth: {
-        width: 30,
-        alignItems: 'flex-start',
+        width: 24,
+        alignItems: 'center',
+        marginRight: 8,
     },
     infoText: {
-        fontSize: 15,
-        color: '#333',
+        fontSize: 14,
+        color: '#4B5563',
         fontWeight: '500',
     },
 
     // --- Empty State ---
     emptyContainer: {
         alignItems: 'center',
-        marginTop: 50,
+        marginTop: 60,
     },
     emptyText: {
-        color: '#999',
+        color: '#9CA3AF',
         fontSize: 16,
+        marginTop: 8
     }
 });
 

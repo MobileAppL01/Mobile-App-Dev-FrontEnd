@@ -12,6 +12,7 @@ import {
     Dimensions,
     ActivityIndicator
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -26,7 +27,6 @@ export default function BookingConfirmScreen() {
     const route = useRoute();
     const { bookingInfo } = (route.params as any) || {};
 
-    // Get user from store
     // Get user from store
     const user = useAuthStore(state => state.user);
     const fetchProfile = useAuthStore(state => state.fetchProfile);
@@ -85,6 +85,37 @@ export default function BookingConfirmScreen() {
         );
     };
 
+    const [promotions, setPromotions] = useState<any[]>([]);
+    const [selectedPromotion, setSelectedPromotion] = useState<any | null>(null);
+
+    // Fetch promotions (Mock)
+    React.useEffect(() => {
+        // Simulate API call
+        const loadPromos = async () => {
+            // In real integration: const res = await promotionService.getByCourt(court.id);
+            // Mock data:
+            setPromotions([
+                { id: 1, code: 'NEWUSER', discountType: 'PERCENT', value: 10, description: 'Giảm 10% khách mới' },
+                { id: 2, code: 'VNPAY20', discountType: 'AMOUNT', value: 20000, description: 'Giảm 20k khi thanh toán VNPAY' }
+            ]);
+        };
+        loadPromos();
+    }, [court.id]);
+
+    // Calculate Final Total
+    const finalTotal = React.useMemo(() => {
+        let total = totalPrice;
+        if (selectedPromotion) {
+            if (selectedPromotion.discountType === 'PERCENT') {
+                total = total - (total * selectedPromotion.value / 100);
+            } else if (selectedPromotion.discountType === 'AMOUNT') {
+                total = total - selectedPromotion.value;
+            }
+        }
+        return Math.max(0, total);
+    }, [totalPrice, selectedPromotion]);
+
+
     const processBooking = async () => {
         setIsProcessing(true);
         try {
@@ -92,17 +123,33 @@ export default function BookingConfirmScreen() {
                 courtId: court.id,
                 bookingDate: dateISO,
                 startHours: slots,
-                paymentMethod
+                paymentMethod,
+                promotionId: selectedPromotion?.id, // Add promotion ID
+                finalPrice: finalTotal // Send final price if backend requires validation
             };
-            console.log("Creating booking with payload:", JSON.stringify(bookingPayload, null, 2));
-
             // Create booking PENDING
             const bookingResult = await bookingService.createBooking(bookingPayload);
 
             if (bookingResult) {
+                // Send Local Notification
+                if (bookingResult.id) {
+                    try {
+                        await Notifications.scheduleNotificationAsync({
+                            content: {
+                                title: "Đặt sân thành công! 🏸",
+                                body: `Bạn đã đặt sân ${court.name} vào ngày ${displayDate}. Chúc bạn chơi vui vẻ!`,
+                                sound: true
+                            },
+                            trigger: null, // Send immediately
+                        });
+                    } catch (err) {
+                        // Ignore notification error
+                    }
+                }
+
                 if (paymentMethod === 'CASH') {
-                    // Method: Deposit 50%
-                    const depositAmount = totalPrice * 0.5;
+                    // Method: Deposit 50% of FINAL TOTAL
+                    const depositAmount = finalTotal * 0.5;
                     navigation.replace("PaymentQR", {
                         booking: bookingResult,
                         totalPrice: depositAmount,
@@ -115,14 +162,12 @@ export default function BookingConfirmScreen() {
                     });
                 } else {
                     // Method: VNPAY (Active / Full Payment)
-                    // In a real app, 'bookingResult' would contain a 'paymentUrl' from backend.
-                    // Here we simulate it.
-                    const fakeUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?amount=${totalPrice}&orderInfo=Booking_${bookingResult.id}`;
+                    const fakeUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?amount=${finalTotal}&orderInfo=Booking_${bookingResult.id}`;
 
                     navigation.replace("PaymentWebView", {
-                        paymentUrl: "", // Leave empty to trigger mock HTML in WebView screen, or pass fakeUrl if valid
+                        paymentUrl: "",
                         booking: bookingResult,
-                        totalPrice
+                        totalPrice: finalTotal
                     });
                 }
             } else {
@@ -245,6 +290,43 @@ export default function BookingConfirmScreen() {
                         </View>
                     </View>
 
+                    {/* Promotion Section */}
+                    <Text style={styles.sectionTitle}>Khuyến mãi</Text>
+                    <View style={styles.formCard}>
+                        {promotions.length === 0 ? (
+                            <Text style={{ fontStyle: 'italic', color: '#999' }}>Không có khuyến mãi cho sân này.</Text>
+                        ) : (
+                            promotions.map((promo) => {
+                                const isSelected = selectedPromotion?.id === promo.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={promo.id}
+                                        style={[
+                                            styles.promoItem,
+                                            isSelected && styles.promoItemActive
+                                        ]}
+                                        onPress={() => setSelectedPromotion(isSelected ? null : promo)}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <MaterialCommunityIcons
+                                                name={isSelected ? "ticket-confirmation" : "ticket-outline"}
+                                                size={24}
+                                                color={isSelected ? "#EF4444" : "#6B7280"}
+                                            />
+                                            <View style={{ marginLeft: 12 }}>
+                                                <Text style={[styles.promoCode, isSelected && { color: '#EF4444' }]}>
+                                                    {promo.code}
+                                                </Text>
+                                                <Text style={styles.promoDesc}>{promo.description}</Text>
+                                            </View>
+                                        </View>
+                                        {isSelected && <Ionicons name="checkmark-circle" size={20} color="#EF4444" />}
+                                    </TouchableOpacity>
+                                );
+                            })
+                        )}
+                    </View>
+
                     {/* Payment Method */}
                     <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
                     <View style={styles.columnGap}>
@@ -253,7 +335,7 @@ export default function BookingConfirmScreen() {
                             onPress={() => setPaymentMethod('CASH')}
                         >
                             <View style={styles.paymentMethodHeader}>
-                                <MaterialCommunityIcons name="bank-transfer-out" size={24} color={paymentMethod === 'CASH' ? '#3B82F6' : '#6B7280'} />
+                                <MaterialCommunityIcons name="bank-transfer-out" size={24} color={paymentMethod === 'CASH' ? '#3B9AFF' : '#6B7280'} />
                                 <Text style={[styles.paymentText, paymentMethod === 'CASH' && styles.paymentTextActive]}>Thanh toán trực tiếp (Cọc 50%)</Text>
                             </View>
                             <Text style={styles.paymentSubtext}>Chuyển khoản cọc {(totalPrice * 0.5).toLocaleString('vi-VN')}đ, thanh toán phần còn lại tại sân.</Text>
@@ -264,7 +346,7 @@ export default function BookingConfirmScreen() {
                             onPress={() => setPaymentMethod('VNPAY')}
                         >
                             <View style={styles.paymentMethodHeader}>
-                                <MaterialCommunityIcons name="credit-card-outline" size={24} color={paymentMethod === 'VNPAY' ? '#3B82F6' : '#6B7280'} />
+                                <MaterialCommunityIcons name="credit-card-outline" size={24} color={paymentMethod === 'VNPAY' ? '#3B9AFF' : '#6B7280'} />
                                 <Text style={[styles.paymentText, paymentMethod === 'VNPAY' && styles.paymentTextActive]}>Thanh toán ngân hàng (VNPAY)</Text>
                             </View>
                             <Text style={styles.paymentSubtext}>Thanh toán toàn bộ {totalPrice.toLocaleString('vi-VN')}đ qua cổng thanh toán.</Text>
@@ -278,7 +360,14 @@ export default function BookingConfirmScreen() {
             <View style={styles.footer}>
                 <View>
                     <Text style={styles.footerTotalLabel}>Thành tiền</Text>
-                    <Text style={styles.footerTotalValue}>{totalPrice.toLocaleString('vi-VN')}đ</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                        {selectedPromotion && (
+                            <Text style={{ textDecorationLine: 'line-through', color: '#999', fontSize: 14, marginBottom: 2 }}>
+                                {totalPrice.toLocaleString('vi-VN')}đ
+                            </Text>
+                        )}
+                        <Text style={styles.footerTotalValue}>{finalTotal.toLocaleString('vi-VN')}đ</Text>
+                    </View>
                 </View>
                 <TouchableOpacity
                     style={[styles.confirmButton, isProcessing && { opacity: 0.7 }]}
@@ -480,7 +569,7 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     paymentCardActive: {
-        borderColor: '#3B82F6',
+        borderColor: '#3B9AFF',
         backgroundColor: '#EFF6FF'
     },
     paymentMethodHeader: {
@@ -495,7 +584,7 @@ const styles = StyleSheet.create({
         marginLeft: 10
     },
     paymentTextActive: {
-        color: '#3B82F6'
+        color: '#3B9AFF'
     },
     paymentSubtext: {
         fontSize: 13,
@@ -522,7 +611,7 @@ const styles = StyleSheet.create({
         color: '#1F2937'
     },
     confirmButton: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#3B9AFF',
         paddingVertical: 12,
         paddingHorizontal: 32,
         borderRadius: 12
@@ -531,5 +620,30 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16
+    },
+    promoItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        marginBottom: 8,
+        marginTop: 4,
+        backgroundColor: '#F9FAFB'
+    },
+    promoItemActive: {
+        borderColor: '#EF4444',
+        backgroundColor: '#FEF2F2'
+    },
+    promoCode: {
+        fontWeight: 'bold',
+        color: '#374151',
+        fontSize: 14
+    },
+    promoDesc: {
+        fontSize: 12,
+        color: '#6B7280'
     }
 });

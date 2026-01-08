@@ -11,7 +11,7 @@ import {
 import { StackScreenProps } from "@react-navigation/stack";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { SafeAreaView } from "react-native-safe-area-context";
-import LogoLight from "../../assets/logos/logo_light.svg";
+import LogoDark from "../../assets/logos/logo_dark.svg";
 
 type Props = StackScreenProps<RootStackParamList, "OnboardingFirst">;
 
@@ -23,7 +23,7 @@ const OnboardingScreenFirst = ({ navigation }: Props) => {
       <StatusBar barStyle="light-content" />
 
       <View style={styles.headerContainer}>
-        <LogoLight width={width * 0.8} height={height * 0.15} />
+        <LogoDark width={width * 0.8} height={height * 0.15} />
       </View>
 
       <View style={styles.imageContainer}>

@@ -37,6 +37,7 @@ interface Court {
   phone?: string;
   description?: string;
   isSkeleton?: boolean;
+  status?: string;
 }
 import { getCourtImageSource } from '../../utils/imageHelper';
 import { Skeleton } from '../../components/common/Skeleton';
@@ -75,27 +76,36 @@ const CourtCard = React.memo(({ item, onPress }: { item: Court, onPress: (item: 
     }
   };
 
+  const isMaintenance = item.status === 'MAINTENANCE';
+
   return (
     <TouchableOpacity
-      style={styles.cardContainer}
-      activeOpacity={0.9}
-      onPress={() => onPress(item)}
+      style={[styles.cardContainer, isMaintenance && styles.cardDisabled]}
+      activeOpacity={isMaintenance ? 1 : 0.9}
+      onPress={() => !isMaintenance && onPress(item)}
     >
       <View style={styles.imageContainer}>
         <Image
           source={imageSource}
-          style={styles.courtImage}
+          style={[styles.courtImage, isMaintenance && { opacity: 0.6 }]}
           onError={handleImageError}
         />
+        {isMaintenance && (
+          <View style={styles.maintenanceOverlay}>
+            <Text style={styles.maintenanceText}>BẢO TRÌ</Text>
+          </View>
+        )}
         {/* Overlay Icons */}
-        <View style={styles.overlayIcons}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="heart-outline" size={16} color="#3B9AFF" />
+        {!isMaintenance && (
+          <View style={styles.overlayIcons}>
+            <View style={styles.iconBadge}>
+              <Ionicons name="heart-outline" size={16} color="#3B9AFF" />
+            </View>
+            <View style={[styles.iconBadge, { marginLeft: 8 }]}>
+              <Ionicons name="location-outline" size={16} color="#3B9AFF" />
+            </View>
           </View>
-          <View style={[styles.iconBadge, { marginLeft: 8 }]}>
-            <Ionicons name="location-outline" size={16} color="#3B9AFF" />
-          </View>
-        </View>
+        )}
       </View>
 
       <View style={styles.cardContent}>
@@ -107,8 +117,12 @@ const CourtCard = React.memo(({ item, onPress }: { item: Court, onPress: (item: 
           <Text style={{ fontWeight: 'bold' }}>{item.openTime?.substring(0, 5)}</Text> - <Text style={{ fontWeight: 'bold' }}>{item.closeTime?.substring(0, 5)}</Text>
         </Text>
 
-        <TouchableOpacity style={styles.bookButton} onPress={() => onPress(item)}>
-          <Text style={styles.bookButtonText}>Đặt ngay</Text>
+        <TouchableOpacity
+          style={[styles.bookButton, isMaintenance && { backgroundColor: '#ccc' }]}
+          onPress={() => !isMaintenance && onPress(item)}
+          disabled={isMaintenance}
+        >
+          <Text style={styles.bookButtonText}>{isMaintenance ? "Bảo trì" : "Đặt ngay"}</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -176,7 +190,8 @@ export default function HomeScreen() {
         closeTime: "22:00", // Default
         image: { uri: null }, // Initialize with null to trigger default/random logic
         phone: "0123456789",
-        description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ."
+        description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ.",
+        status: loc.status
       }));
 
       // 3. Client-side Filter
@@ -678,6 +693,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
+  },
+  cardDisabled: {
+    opacity: 0.9,
+    backgroundColor: '#EEEEEE'
+  },
+  maintenanceOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)'
+  },
+  maintenanceText: {
+    color: 'white',
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4
   },
   imageContainer: {
     position: 'relative',

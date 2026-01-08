@@ -6,7 +6,7 @@ import {
   FlatList,
   StatusBar,
   RefreshControl,
-  ActivityIndicator,Button
+  ActivityIndicator, Button
 } from "react-native";
 import {
   Ionicons,
@@ -161,7 +161,7 @@ export default function BookingHistoryScreen() {
       {/* Header Card */}
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <Ionicons name="location-sharp" size={24} color="white" />
+          <Ionicons name="location-sharp" size={20} color="#3B82F6" />
         </View>
 
         <View style={styles.headerTextContainer}>
@@ -217,26 +217,14 @@ export default function BookingHistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#42A5F5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* HEADER */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Lịch sử đặt sân</Text>
         <Text style={styles.headerSubtitle}>
-          Xem và quản lí lịch đặt sân của bạn
+          Quản lý danh sách đặt sân của bạn
         </Text>
-        {/* <Button
-          title="Bắn thử lỗi lên Sentry!"
-          color="red"
-          onPress={() => {
-            try {
-              throw new Error("Test Sentry: Lỗi này từ History Screen");
-            } catch (error) {
-              Sentry.captureException(error);
-              alert("Đã gửi lỗi lên Sentry xong!");
-            }
-          }}
-        /> */}
       </View>
 
       {/* TAB SWITCHER */}

@@ -14,7 +14,8 @@ import {
     ActivityIndicator,
     Alert,
     Animated,
-    RefreshControl
+    RefreshControl,
+    KeyboardAvoidingView
 } from 'react-native';
 import { getAvatarSource } from '../../utils/imageHelper';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -475,81 +476,86 @@ export default function ReviewScreen() {
 
             {
                 modalVisible && (
-                    <View style={[styles.modalOverlay, { zIndex: 9998 }]}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>
-                                {editTarget
-                                    ? (editTarget.type === 'REVIEW' ? "Chỉnh sửa đánh giá" : "Chỉnh sửa bình luận")
-                                    : (replyTarget ? "Trả lời bình luận" : "Đánh giá của bạn")
-                                }
-                            </Text>
-                            <View style={styles.miniUser}>
-                                <Image source={getAvatarSource(user?.avatar)} style={styles.miniAvatar} />
-                                <View>
-                                    <Text style={styles.miniName}>{user?.fullName || "Tôi"}</Text>
-                                    <Text style={styles.miniNote}>Thông tin công khai</Text>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        style={[styles.modalOverlay, { zIndex: 9998 }]}
+                    >
+                        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>
+                                    {editTarget
+                                        ? (editTarget.type === 'REVIEW' ? "Chỉnh sửa đánh giá" : "Chỉnh sửa bình luận")
+                                        : (replyTarget ? "Trả lời bình luận" : "Đánh giá của bạn")
+                                    }
+                                </Text>
+                                <View style={styles.miniUser}>
+                                    <Image source={getAvatarSource(user?.avatar)} style={styles.miniAvatar} />
+                                    <View>
+                                        <Text style={styles.miniName}>{user?.fullName || "Tôi"}</Text>
+                                        <Text style={styles.miniNote}>Thông tin công khai</Text>
+                                    </View>
                                 </View>
-                            </View>
 
-                            {/* Rating only show if Review (Edit Review or Create Review) */}
-                            {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
-                                <View style={styles.starInputRow}>
-                                    {[1, 2, 3, 4, 5].map(s => (
-                                        <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
-                                            <Ionicons
-                                                name={s <= myRating ? "star" : "star-outline"}
-                                                size={32}
-                                                color="#FFD700"
-                                                style={{ marginHorizontal: 4 }}
-                                            />
+                                {/* Rating only show if Review (Edit Review or Create Review) */}
+                                {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                                    <View style={styles.starInputRow}>
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <TouchableOpacity key={s} onPress={() => setMyRating(s)}>
+                                                <Ionicons
+                                                    name={s <= myRating ? "star" : "star-outline"}
+                                                    size={32}
+                                                    color="#FFD700"
+                                                    style={{ marginHorizontal: 4 }}
+                                                />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+
+                                <View style={styles.inputContainer}>
+                                    <TextInput
+                                        placeholder={replyTarget ? "Nhập câu trả lời của bạn..." : "Hãy mô tả trải nghiệm của bạn..."}
+                                        multiline
+                                        style={styles.textInput}
+                                        value={myComment}
+                                        onChangeText={setMyComment}
+                                    />
+                                </View>
+
+                                {/* Image picker only for Reviews */}
+                                {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
+                                    <View style={styles.addImageAction}>
+                                        <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
+                                        <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
+                                            {selectedImages.length > 0 ? (
+                                                <ScrollView horizontal>
+                                                    {selectedImages.map((uri, idx) => (
+                                                        <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
+                                                    ))}
+                                                </ScrollView>
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="images-outline" size={24} color="#666" />
+                                                    <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
+                                                </>
+                                            )}
                                         </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
+                                    </View>
+                                )}
 
-                            <View style={styles.inputContainer}>
-                                <TextInput
-                                    placeholder={replyTarget ? "Nhập câu trả lời của bạn..." : "Hãy mô tả trải nghiệm của bạn..."}
-                                    multiline
-                                    style={styles.textInput}
-                                    value={myComment}
-                                    onChangeText={setMyComment}
-                                />
-                            </View>
-
-                            {/* Image picker only for Reviews */}
-                            {(!replyTarget && (!editTarget || editTarget.type === 'REVIEW')) && (
-                                <View style={styles.addImageAction}>
-                                    <Text style={styles.addImageTitle}>Thêm hình ảnh hoặc video</Text>
-                                    <TouchableOpacity style={styles.addImageBox} onPress={pickImage}>
-                                        {selectedImages.length > 0 ? (
-                                            <ScrollView horizontal>
-                                                {selectedImages.map((uri, idx) => (
-                                                    <Image key={idx} source={{ uri }} style={{ width: 50, height: 50, marginRight: 5, borderRadius: 4 }} />
-                                                ))}
-                                            </ScrollView>
-                                        ) : (
-                                            <>
-                                                <Ionicons name="images-outline" size={24} color="#666" />
-                                                <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Kéo hoặc chạm để tải lên</Text>
-                                            </>
-                                        )}
+                                <View style={styles.modalActions}>
+                                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                                        <Text style={styles.cancelText}>Quay lại</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                                        <Text style={styles.submitText}>
+                                            {editTarget ? "Cập nhật" : (replyTarget ? "Phản hồi" : "Gửi đánh giá")}
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
-                            )}
-
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
-                                    <Text style={styles.cancelText}>Quay lại</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-                                    <Text style={styles.submitText}>
-                                        {editTarget ? "Cập nhật" : (replyTarget ? "Phản hồi" : "Gửi đánh giá")}
-                                    </Text>
-                                </TouchableOpacity>
                             </View>
-                        </View>
-                    </View>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
                 )
             }
         </SafeAreaView >

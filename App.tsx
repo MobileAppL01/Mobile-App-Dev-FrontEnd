@@ -5,13 +5,26 @@ import { setAccessToken } from './src/services/axiosInstance';
 import * as Sentry from '@sentry/react-native';
 import NotificationToast from './src/components/NotificationToast';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AdModal } from './src/components/common/AdModal';
 
 // 1. Import biến navigationIntegration từ RootNavigator
 import RootNavigator, { navigationIntegration } from './src/navigation/RootNavigator';
+import * as Notifications from 'expo-notifications';
+
+// --- NOTIFICATIONS CONFIG ---
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 // --- CẤU HÌNH SENTRY ---
 Sentry.init({
-  dsn: 'https://8a45200ffcbcf76361a77cc8a44c9edc@o4510502094438400.ingest.de.sentry.io/4510667428331600', 
+  dsn: 'https://8a45200ffcbcf76361a77cc8a44c9edc@o4510502094438400.ingest.de.sentry.io/4510667428331600',
 
   // --- THÊM 3 DÒNG NÀY ---
   enableAutoSessionTracking: true, // Bắt buộc bật tính năng theo dõi Session
@@ -22,7 +35,7 @@ Sentry.init({
   enableLogs: true,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  
+
   integrations: [
     navigationIntegration, // Integration điều hướng
     Sentry.mobileReplayIntegration(),
@@ -32,7 +45,7 @@ Sentry.init({
 
 function App() {
   const token = useAuthStore(state => state.token);
-  const user = useAuthStore(state => state.user); 
+  const user = useAuthStore(state => state.user);
 
   // GỘP CHUNG VÀO 1 useEffect DUY NHẤT
   useEffect(() => {
@@ -42,11 +55,9 @@ function App() {
     // 2. Logic định danh User cho Sentry
     if (token && user) {
       // --- KHI CÓ USER (ĐÃ LOGIN) ---
-      console.log("Sentry User Tracking: ", user.email);
-      
       Sentry.setUser({
         id: user.id ? user.id.toString() : 'unknown_id',
-        email: user.email, 
+        email: user.email,
         username: user.fullName,
         ip_address: "{{auto}}",
         data: {
@@ -64,16 +75,28 @@ function App() {
 
     } else {
       // --- KHI LOGOUT / CHƯA LOGIN ---
-      console.log("Sentry User Tracking: Cleared");
       Sentry.setUser(null);
     }
 
   }, [token, user]); // Theo dõi cả token và user
 
+  // Ad Logic
+  const [isAdVisible, setIsAdVisible] = React.useState(false);
+
+  useEffect(() => {
+    // Show ad every 60 seconds (60000ms)
+    const interval = setInterval(() => {
+      setIsAdVisible(true);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <SafeAreaProvider>
       <RootNavigator />
       <NotificationToast />
+      <AdModal visible={isAdVisible} onClose={() => setIsAdVisible(false)} />
     </SafeAreaProvider>
   );
 }

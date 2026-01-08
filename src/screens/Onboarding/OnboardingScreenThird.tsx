@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useAuthStore } from "../../store/useAuthStore";
 
-import LogoLight from "../../assets/logos/logo_light.svg";
+import LogoDark from "../../assets/logos/logo_dark.svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -35,7 +35,7 @@ const OnboardingScreenThird = ({ navigation }: Props) => {
       <StatusBar barStyle="light-content" />
 
       <View style={styles.headerContainer}>
-        <LogoLight width={width * 0.6} height="100%" />
+        <LogoDark width={width * 0.6} height="100%" />
       </View>
 
       <View style={styles.imageContainer}>
@@ -47,11 +47,10 @@ const OnboardingScreenThird = ({ navigation }: Props) => {
       </View>
 
       <View style={styles.bottomContainer}>
-        <Text style={styles.title}>Đảm bảo đúng hẹn</Text>
+        <Text style={styles.title}>Đánh giá chân thực</Text>
 
         <Text style={styles.description}>
-          Nhận lời nhắc thông minh và cập nhật hàng tuần về lịch đặt sân của bạn
-          - luôn đúng giờ, sẵn sàng chơi
+          Xem hình ảnh và đánh giá thực tế từ cộng đồng để chọn được sân ưng ý nhất
         </Text>
 
         <View style={styles.paginationContainer}>
