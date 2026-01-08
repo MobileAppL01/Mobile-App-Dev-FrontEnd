@@ -264,21 +264,33 @@ const RevenueScreen = () => {
         <Text style={styles.headerText}>
           Quản lý doanh thu hiệu quả - Chính xác!
         </Text>
-        <View style={{ padding: 20, backgroundColor: "#ffebee" }}>
+        {/* <View
+          style={{ marginTop: 20, padding: 10, backgroundColor: "#f0f0f0" }}
+        >
           <Button
-            title="Bắn thử lỗi lên Sentry!"
-            color="red"
+            title="⚡ BẮN DỮ LIỆU GIẢ (SPAM)"
             onPress={() => {
-              // Cách 1: Gửi một lỗi JS thuần túy
-              try {
-                throw new Error("Test Sentry: Lỗi này từ Revenue");
-              } catch (error) {
-                Sentry.captureException(error);
-                alert("Đã gửi lỗi lên Sentry xong!");
+              // Tạo vòng lặp bắn 5 lần liên tiếp
+              for (let i = 0; i < 5; i++) {
+                // Random thời gian từ 100ms đến 3000ms (3 giây)
+                const randomDuration = Math.floor(Math.random() * 3000) + 100;
+
+                // 1. Tạo Span (Hành động giả)
+                const span = Sentry.startInactiveSpan({
+                  name: `Test Action ${i + 1} - ${randomDuration}ms`,
+                  op: "manual.test", // Đánh dấu loại hành động
+                });
+
+                // 2. Kết thúc Span sau khoảng thời gian random
+                setTimeout(() => {
+                  span.end();
+                  console.log(`Đã gửi span ${randomDuration}ms lên Sentry`);
+                }, randomDuration);
               }
+              alert("Đang bắn 5 dữ liệu với tốc độ khác nhau...");
             }}
           />
-        </View>
+        </View> */}
       </View>
 
       <View style={styles.body}>

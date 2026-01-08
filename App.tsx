@@ -12,6 +12,11 @@ import RootNavigator, { navigationIntegration } from './src/navigation/RootNavig
 // --- CẤU HÌNH SENTRY ---
 Sentry.init({
   dsn: 'https://8a45200ffcbcf76361a77cc8a44c9edc@o4510502094438400.ingest.de.sentry.io/4510667428331600', 
+
+  // --- THÊM 3 DÒNG NÀY ---
+  enableAutoSessionTracking: true, // Bắt buộc bật tính năng theo dõi Session
+  release: "bookington@1.0.0",     // Đặt tên app + phiên bản (Tùy ý bạn)
+  dist: "1",                       // Mã build (thường là 1, 2, 3...)
   tracesSampleRate: 1.0,
   sendDefaultPii: true,
   enableLogs: true,
