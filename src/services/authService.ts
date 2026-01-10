@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance, { getAccessToken } from './axiosInstance';
 import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
 
 export const authService = {
@@ -62,32 +62,64 @@ export const authService = {
 
     uploadAvatar: async (file: any) => {
         const formData = new FormData();
+
+        // Use file.mimeType if available (Expo 15+), fallback to 'image/jpeg'
+        const type = file.mimeType || file.type || 'image/jpeg';
+        // Ensure type handles just "image" which some backends reject
+        const finalType = type === 'image' ? 'image/jpeg' : type;
+
         formData.append('file', {
             uri: file.uri,
-            name: file.fileName || 'avatar.jpg',
-            type: file.type || 'image/jpeg'
+            name: file.fileName || `avatar_${Date.now()}.jpg`,
+            type: finalType
         } as any);
 
-        // Fix: backend FileController is at /api/files, not /api/v1/files
+        // Logic to construct the full URL
         let baseURL = axiosInstance.defaults.baseURL || "";
+        // Strip trailing slash if present
+        if (baseURL.endsWith('/')) {
+            baseURL = baseURL.slice(0, -1);
+        }
+        // Strip /v1 if present to target /api/files... not /api/v1/files...
+        // Note: Check if backend really follows this convention. 
+        // Based on previous comments, backend FileController is at /api/files (or /files relative to root context)
+        // If baseURL is .../api/v1, we want .../api
         if (baseURL.endsWith("/v1")) {
             baseURL = baseURL.replace(/\/v1$/, "");
         }
 
-        // We can't use axiosInstance directly because it forces baseURL
-        // So we construct the full URL
         const fullUrl = `${baseURL}/files/upload/avatar`;
 
-        // Get token manually if needed, or use axios with absolute URL (axios supports absolute URL overriding baseURL)
-        // But axiosInstance has interceptors for Token.
-        // Option 1: Use axiosInstance with FULL URL (it should override baseURL if url is absolute? No, it concatenates if not careful, but usually absolute URL overrides)
-        // Let's try passing the full URL to axiosInstance.
+        const token = getAccessToken();
 
-        const response = await axiosInstance.post(fullUrl, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        return response.data;
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    // Do NOT set Content-Type for FormData; fetch sets it with boundary
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Upload response parsing failed:", text);
+                throw new Error("Upload failed: Invalid server response");
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || "Upload failed");
+            }
+
+            return data;
+        } catch (error) {
+            console.error("Upload avatar error:", error);
+            throw error;
+        }
     }
 };

@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance, { getAccessToken } from './axiosInstance';
 // Hãy đảm bảo đường dẫn import type Location đúng với file bạn định nghĩa
 import { Location } from "../store/useCourtStore";
 
@@ -181,15 +181,18 @@ export const manageCourtService = {
       console.log(`[Upload] File URI: ${file.uri}`);
 
       const formData = new FormData();
+
+      const mimeType = file.mimeType || file.type || "image/jpeg";
+      const finalMimeType = mimeType === 'image' ? 'image/jpeg' : mimeType;
+
       formData.append("file", {
         uri: file.uri,
         name: file.fileName || `image_${Date.now()}.jpg`,
-        type: file.mimeType || "image/jpeg",
+        type: finalMimeType,
       } as any);
 
       // Get Token
-      const { useAuthStore } = require("../store/useAuthStore");
-      const token = useAuthStore.getState().token;
+      const token = getAccessToken();
 
       const response = await fetch(fullUrl, {
         method: "POST",

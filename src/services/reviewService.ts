@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance, { getAccessToken } from './axiosInstance';
 
 // Backend DTOs
 interface ReviewDTO {
@@ -103,17 +103,57 @@ export const reviewService = {
     uploadReviewImages: async (reviewId: number, images: any[]): Promise<UIReview> => {
         const formData = new FormData();
         images.forEach((img) => {
-            formData.append('files', {
+            const mimeType = img.mimeType || img.type || 'image/jpeg';
+            const finalType = mimeType === 'image' ? 'image/jpeg' : mimeType;
+
+            formData.append('files', { // Note: 'files' matches Backend @RequestPart("files")
                 uri: img.uri,
-                name: img.fileName || 'review_img.jpg',
-                type: img.type || 'image/jpeg'
+                name: img.fileName || `review_${Date.now()}.jpg`,
+                type: finalType
             } as any);
         });
 
-        const response = await axiosInstance.post<ReviewDTO>(`/reviews/${reviewId}/images`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return mapToUIReview(response.data);
+        // Backend ReviewController is at /api/v1/reviews
+        // axiosInstance.baseURL is .../api/v1
+        let baseURL = axiosInstance.defaults.baseURL || "";
+        if (baseURL.endsWith('/')) baseURL = baseURL.slice(0, -1);
+
+        // Ensure we don't duplicate /reviews if it's already in base (unlikely but safe)
+        const endpoint = `/reviews/${reviewId}/images`;
+        const fullUrl = `${baseURL}${endpoint}`;
+
+        const token = getAccessToken();
+
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    // Accept header is good practice
+                    'Accept': 'application/json',
+                    // NO Content-Type header
+                },
+                body: formData,
+            });
+
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Review upload parse error:", text);
+                throw new Error("Invalid server response");
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || "Upload failed");
+            }
+
+            return mapToUIReview(data);
+        } catch (error) {
+            console.error("Upload review images error", error);
+            throw error;
+        }
     },
 
     createComment: async (reviewId: number, content: string, parentCommentId?: number): Promise<UIReply> => {

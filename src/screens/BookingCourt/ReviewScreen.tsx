@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     textInput: { minHeight: 80, textAlignVertical: 'top' },
     addImageAction: { width: '100%', marginBottom: 20, alignItems: 'center' },
     addImageTitle: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-    addImageBox: { width: '100%', height: 60, borderWidth: 1, borderColor: '#ccc', borderStyle: 'dashed', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    addImageBox: { width: '100%', height: 80, backgroundColor: '#FAFAFA', borderWidth: 1, borderColor: '#DDD', borderStyle: 'dashed', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     modalActions: { flexDirection: 'row', width: '100%', justifyContent: 'space-between' },
     cancelBtn: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#eee', borderRadius: 8, flex: 0.45, alignItems: 'center' },
     cancelText: { fontWeight: 'bold', color: '#333' },

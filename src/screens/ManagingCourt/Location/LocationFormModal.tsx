@@ -141,12 +141,15 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
                 <Text style={styles.label}>Ảnh đại diện</Text>
                 <TouchableOpacity onPress={handlePickImage} style={{
                   height: 150,
-                  backgroundColor: '#e1e1e1',
+                  backgroundColor: '#f9f9f9', // Lighter background
                   borderRadius: 8,
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginBottom: 15,
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: '#ddd',
+                  borderStyle: 'dashed'
                 }}>
                   {uploading ? (
                     <ActivityIndicator size="large" color="#3B9AFF" />

@@ -264,19 +264,24 @@ export default function UserProfileScreen() {
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
                         <TouchableOpacity onPress={pickImage} disabled={!isEditing}>
-                            <Image source={{ uri: isEditing && formData.avatar ? formData.avatar : displayUser.avatar }} style={styles.avatar} />
-                            {isEditing && (
-                                <View style={{
-                                    position: 'absolute',
-                                    right: 15,
-                                    bottom: 0,
-                                    backgroundColor: 'white',
-                                    borderRadius: 12,
-                                    padding: 4
-                                }}>
-                                    <Ionicons name="camera" size={16} color="#333" />
-                                </View>
-                            )}
+                            <View style={{ position: 'relative' }}>
+                                <Image source={{ uri: isEditing && formData.avatar ? formData.avatar : displayUser.avatar }} style={styles.avatar} />
+                                {isEditing && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        right: 0,
+                                        bottom: 0,
+                                        backgroundColor: 'white',
+                                        borderRadius: 15,
+                                        padding: 6,
+                                        borderWidth: 1,
+                                        borderColor: '#eee',
+                                        elevation: 2
+                                    }}>
+                                        <Ionicons name="camera" size={18} color="#333" />
+                                    </View>
+                                )}
+                            </View>
                         </TouchableOpacity>
 
                         <View style={styles.headerInfo}>

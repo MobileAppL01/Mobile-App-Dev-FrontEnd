@@ -20,7 +20,7 @@ const { width } = Dimensions.get('window');
 
 // Dummy/Hardcoded QR image for "VNPAY/Bank Transfer"
 // In a real app, you would generate this based on payment URL or use a dynamic QR service.
-const QR_IMAGE_URL = "https://img.vietqr.io/image/MB-0335624796-compact2.png"; // Custom QR Link
+const QR_IMAGE_URL = "https://img.vietqr.io/image/MB-0376929681-compact2.png"; // Custom QR Link
 
 export default function PaymentQRScreen() {
     const navigation = useNavigation<any>();
@@ -33,8 +33,8 @@ export default function PaymentQRScreen() {
     // If needed parameters are missing, dummy data for safe render
     const safeBankInfo = bankInfo || {
         bankId: "MB",
-        accountNo: "0000000000",
-        accountName: "UNKNOWN",
+        accountNo: "0376929681",
+        accountName: "PHAM THANH PHONG",
         content: `Booking ${booking?.id}`
     };
 

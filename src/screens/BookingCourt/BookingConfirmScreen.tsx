@@ -155,8 +155,8 @@ export default function BookingConfirmScreen() {
                         totalPrice: depositAmount,
                         bankInfo: {
                             bankId: "MB",
-                            accountNo: "0335624796",
-                            accountName: "NGUYEN DINH PHONG",
+                            accountNo: "0376929681",
+                            accountName: "PHAM THANH PHONG",
                             content: `COC 50% DON ${bookingResult.id}`
                         }
                     });
