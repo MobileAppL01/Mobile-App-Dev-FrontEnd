@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type NotificationType = 'success' | 'error' | 'info';
+type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationState {
     visible: boolean;

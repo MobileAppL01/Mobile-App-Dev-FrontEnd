@@ -37,6 +37,7 @@ const ManagerLocationsScreen = () => {
     fetchLocations,
     isLoading,
     addLocation,
+    updateLocation, // Add this
     deleteLocation,
     createPromotion,
   } = useCourtStore();
@@ -68,15 +69,21 @@ const ManagerLocationsScreen = () => {
 
   const handleSubmitLocation = async (data: any) => {
     if (editingCluster) {
-      Alert.alert("Thông báo", "Chức năng cập nhật đang phát triển");
-      // Logic Update gọi ở đây
+      try {
+        await updateLocation(editingCluster.id, data);
+        showNotification("Cập nhật cụm sân thành công!", "success");
+        setModalVisible(false);
+      } catch (err) {
+        showNotification("Cập nhật thất bại", "error");
+      }
     } else {
       try {
         await addLocation(data);
-        Alert.alert("Thành công", "Đã thêm cụm sân mới!");
+        showNotification("Đã thêm cụm sân mới!", "success");
         setModalVisible(false);
       } catch (err) {
         // Store đã log lỗi
+        showNotification("Thêm cụm sân thất bại", "error");
       }
     }
   };
@@ -90,7 +97,10 @@ const ManagerLocationsScreen = () => {
         onPress: async () => {
           try {
             await deleteLocation(item.id);
-          } catch (e) {}
+            showNotification("Đã xóa cụm sân", "success");
+          } catch (e) {
+            showNotification("Xóa thất bại", "error");
+          }
         },
       },
     ]);
@@ -213,6 +223,7 @@ const ManagerLocationsScreen = () => {
       ) : (
         <FlatList
           data={locations}
+          extraData={locations} // Force re-render when data structure changes
           keyExtractor={(item: any) => item.id}
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={fetchLocations} />

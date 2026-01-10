@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { Alert } from 'react-native';
 
 let accessToken: string | null = null;
+let onLogout: (() => void) | null = null;
 
 export const setAccessToken = (token: string | null) => {
     accessToken = token;
@@ -8,8 +10,11 @@ export const setAccessToken = (token: string | null) => {
 
 export const getAccessToken = () => accessToken;
 
+export const setupAxios = (logoutFn: () => void) => {
+    onLogout = logoutFn;
+};
+
 export const BASE_URL = 'https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1';
-// const BASE_URL = 'http://192.168.2.6:8080/api/v1';
 
 const axiosInstance = axios.create({
     baseURL: BASE_URL,
@@ -28,9 +33,39 @@ axiosInstance.interceptors.request.use(
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Interceptor xử lý response lỗi
+axiosInstance.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
         if (error.response) {
-            console.error('API Error Status:', error.response.status);
-            console.error('API Error Data:', JSON.stringify(error.response.data, null, 2));
+            const status = error.response.status;
+            console.error('API Error Status:', status);
+
+            // Xử lý lỗi 401 (Unauthorized) hoặc 403 (Forbidden)
+            if (status === 401 || status === 403) {
+                if (onLogout) {
+                    Alert.alert(
+                        "Phiên đăng nhập hết hạn",
+                        "Vui lòng đăng nhập lại để tiếp tục.",
+                        [
+                            {
+                                text: "OK",
+                                onPress: () => {
+                                    if (onLogout) onLogout();
+                                }
+                            }
+                        ]
+                    );
+                }
+            } else {
+                console.error('API Error Data:', JSON.stringify(error.response.data, null, 2));
+            }
         } else if (error.request) {
             console.error('API Error (No Response):', error.message);
         } else {

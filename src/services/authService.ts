@@ -1,4 +1,5 @@
 import axiosInstance, { getAccessToken } from './axiosInstance';
+import { Platform } from 'react-native';
 import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
 
 export const authService = {
@@ -63,15 +64,25 @@ export const authService = {
     uploadAvatar: async (file: any) => {
         const formData = new FormData();
 
-        // Use file.mimeType if available (Expo 15+), fallback to 'image/jpeg'
-        const type = file.mimeType || file.type || 'image/jpeg';
-        // Ensure type handles just "image" which some backends reject
-        const finalType = type === 'image' ? 'image/jpeg' : type;
+        // Fix for Android: Remove 'file://' prefix if present to normalize, then add it back correctly if needed
+        // Actually, for FormData on Android, it OFTEN needs 'file://'.
+        // Expo Image Picker usually returns 'file:///...' on Android, but let's be safe.
+        let uri = file.uri;
+        if (Platform.OS === 'android' && !uri.startsWith('file://')) {
+            uri = `file://${uri}`;
+        }
+
+        // Fix for MimeType: Android sometimes returns null
+        let type = file.mimeType || file.type;
+        if (!type || type === 'image') {
+            const ext = uri.split('.').pop()?.toLowerCase();
+            type = ext === 'png' ? 'image/png' : 'image/jpeg';
+        }
 
         formData.append('file', {
-            uri: file.uri,
+            uri: uri,
             name: file.fileName || `avatar_${Date.now()}.jpg`,
-            type: finalType
+            type: type
         } as any);
 
         // Logic to construct the full URL
@@ -113,13 +124,29 @@ export const authService = {
             }
 
             if (!response.ok) {
-                throw new Error(data.message || "Upload failed");
-            }
+                // 'text' already contains the response body, 'data' contains parsed JSON if successful
+                try {
+                    // Check if 'data' (parsed JSON) contains the message
+                    if (data.message && data.message.includes("Maximum upload size exceeded")) {
+                        throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+                    }
+                    throw new Error(data.message || 'Upload failed');
+                } catch (e: any) {
+                    // If parsing 'data' failed or 'data.message' wasn't the issue, check raw 'text'
+                    if (text.includes("Maximum upload size exceeded")) {
+                        throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+                    }
+                    // If specific custom error was thrown inside try, rethrow it
+                    if (e.message && e.message.includes("Dung lượng")) throw e;
 
-            return data;
+                    throw new Error('Upload failed');
+                }
+            }
+            return data; // Return the already parsed 'data' if response was OK
         } catch (error) {
             console.error("Upload avatar error:", error);
             throw error;
         }
     }
 };
+

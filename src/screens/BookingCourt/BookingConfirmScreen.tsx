@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 import { bookingService } from '../../services/bookingService';
 
@@ -30,6 +31,7 @@ export default function BookingConfirmScreen() {
     // Get user from store
     const user = useAuthStore(state => state.user);
     const fetchProfile = useAuthStore(state => state.fetchProfile);
+    const showNotification = useNotificationStore(state => state.showNotification);
 
     const [name, setName] = useState(user?.fullName || '');
     const [phone, setPhone] = useState(user?.phone || '');
@@ -67,7 +69,7 @@ export default function BookingConfirmScreen() {
 
     const handleConfirm = async () => {
         if (!name || !phone) {
-            Alert.alert("Thiếu thông tin", "Vui lòng nhập tên và số điện thoại để nhà sân liên hệ.");
+            showNotification("Vui lòng nhập tên và số điện thoại để nhà sân liên hệ.", "warning");
             return;
         }
 
@@ -171,11 +173,11 @@ export default function BookingConfirmScreen() {
                     });
                 }
             } else {
-                Alert.alert("Lỗi", "Đặt sân thất bại. Vui lòng thử lại.");
+                showNotification("Đặt sân thất bại. Vui lòng thử lại.", "error");
             }
         } catch (e: any) {
             console.error("Booking Error Details:", e.response?.data || e.message);
-            Alert.alert("Lỗi", "Có lỗi xảy ra khi tạo đơn. " + (e.response?.data?.message || ""));
+            showNotification(e.response?.data?.message || "Có lỗi xảy ra khi tạo đơn.", "error");
         } finally {
             setIsProcessing(false);
         }

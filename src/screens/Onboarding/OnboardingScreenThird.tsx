@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useAuthStore } from "../../store/useAuthStore";
 
-import LogoDark from "../../assets/logos/logo_dark.svg";
+import LogoLight from "../../assets/logos/logo_light.svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -35,7 +35,7 @@ const OnboardingScreenThird = ({ navigation }: Props) => {
       <StatusBar barStyle="light-content" />
 
       <View style={styles.headerContainer}>
-        <LogoDark width={width * 0.6} height="100%" />
+        <LogoLight width={width * 0.6} height="100%" />
       </View>
 
       <View style={styles.imageContainer}>

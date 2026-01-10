@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from "../services/authService";
 import { LoginRequest, RegisterRequest, UserData } from "../types/auth"; // Import UserData
-import { setAccessToken } from "../services/axiosInstance";
+import { setAccessToken, setupAxios } from "../services/axiosInstance";
 
 interface AuthState {
   hasSeenOnboarding: boolean;
@@ -146,3 +146,8 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Setup Axios Interceptor for Auto Logout
+setupAxios(() => {
+  useAuthStore.getState().logout();
+});

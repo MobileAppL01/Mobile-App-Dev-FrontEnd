@@ -18,6 +18,7 @@ export interface Location {
   openTime: string;
   closeTime: string;
   image: string;
+  images?: string[]; // Thêm trường danh sách ảnh
   courts?: Court[]; // Một địa điểm sẽ chứa danh sách sân con
   promotions?: any[];
 }
@@ -35,6 +36,7 @@ interface CourtStoreState {
   fetchAll: () => Promise<void>;
   fetchLocations: () => Promise<void>;
   addLocation: (data: Location) => Promise<void>;
+  updateLocation: (id: string, data: Partial<Location>) => Promise<void>; // Add this
   createPromotion: (data: PromotionRequest) => Promise<void>;
   getPromotion: (locationId: string) => Promise<void>;
   deletePromotion: (locationId: string) => Promise<void>;
@@ -121,6 +123,30 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     }
   },
 
+  updateLocation: async (id: string, updateData: Partial<Location>) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedResponse = await manageCourtService.updateLocation(id, updateData);
+
+      // Handle response structure depending on backend: { result: Location } or Location
+      const updatedItem = updatedResponse.result || updatedResponse;
+
+      set((state) => ({
+        locations: state.locations.map((item) =>
+          item.id === id ? updatedItem : item
+        ),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error("Update location failed:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || "Lỗi khi cập nhật sân.",
+      });
+      throw error;
+    }
+  },
+
   createPromotion: async (data: PromotionRequest) => {
     set({ isLoading: true, error: null });
     try {
@@ -153,7 +179,7 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
     }
   },
 
-   deletePromotion: async (promotionId: string) => {
+  deletePromotion: async (promotionId: string) => {
     set({ isLoading: true, error: null });
 
     try {
@@ -166,7 +192,7 @@ export const useCourtStore = create<CourtStoreState>((set) => ({
         promotions: state.promotions.filter((item) => item.id !== promotionId),
         isLoading: false,
       }));
-      
+
       // Mẹo: Nếu khuyến mãi nằm lồng trong location (ví dụ: location.promotions), 
       // thì cách tốt nhất và an toàn nhất là gọi lại fetchLocations() ở đây:
       // await get().fetchLocations(); 

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import axiosInstance, { getAccessToken } from './axiosInstance';
 // Hãy đảm bảo đường dẫn import type Location đúng với file bạn định nghĩa
 import { Location } from "../store/useCourtStore";
@@ -37,6 +38,16 @@ export const manageCourtService = {
         error.response?.status,
         error.response?.data
       );
+      throw error;
+    }
+  },
+
+  updateLocation: async (id: string, data: Partial<Location>) => {
+    try {
+      const response = await axiosInstance.put(`/owner/locations/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ API Update Location Error:", error.response?.status);
       throw error;
     }
   },
@@ -180,15 +191,24 @@ export const manageCourtService = {
       console.log(`[Upload] Starting upload to ${fullUrl}`);
       console.log(`[Upload] File URI: ${file.uri}`);
 
+      // Fix Android URI
+      let uri = file.uri;
+      if (Platform.OS === 'android' && !uri.startsWith('file://')) {
+        uri = `file://${uri}`;
+      }
+
+      // Fix MimeType
+      let mimeType = file.mimeType || file.type || "image/jpeg";
+      if (!mimeType || mimeType === 'image') {
+        const ext = uri.split('.').pop()?.toLowerCase();
+        mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      }
+
       const formData = new FormData();
-
-      const mimeType = file.mimeType || file.type || "image/jpeg";
-      const finalMimeType = mimeType === 'image' ? 'image/jpeg' : mimeType;
-
       formData.append("file", {
-        uri: file.uri,
+        uri: uri,
         name: file.fileName || `image_${Date.now()}.jpg`,
-        type: finalMimeType,
+        type: mimeType,
       } as any);
 
       // Get Token
@@ -216,12 +236,23 @@ export const manageCourtService = {
       }
 
       if (!response.ok) {
+        // Handle Max Upload Size
+        if (json.message && json.message.includes("Maximum upload size exceeded")) {
+          throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+        }
+        if (text.includes("Maximum upload size exceeded")) {
+          throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+        }
         throw new Error(json.message || "Upload failed");
       }
 
       return json;
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Upload] Error:", error);
+      // Rethrow friendly error if caught from above
+      if (error.message && error.message.includes("Dung lượng ảnh quá lớn")) {
+        throw error;
+      }
       throw error;
     }
   },

@@ -14,16 +14,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Import your specific paths
 import { RootStackParamList } from "../../navigation/RootNavigator";
 import { useAuthStore } from '../../store/useAuthStore';
-
-import LogoDark from "../../assets/logos/logo_dark.svg";
+import LogoLight from "../../assets/logos/logo_light.svg";
 
 const { width, height } = Dimensions.get("window");
 
-// ✅ FIX 1: Define the Props type
 type Props = StackScreenProps<RootStackParamList, 'OnboardingSecond'>;
 
 const OnboardingScreenSecond = ({ navigation }: Props) => {
-  // ✅ FIX 2: Hooks must be called INSIDE the component
   const setHasSeenOnboarding = useAuthStore((state) => state.setHasSeenOnboarding);
 
   return (
@@ -32,7 +29,7 @@ const OnboardingScreenSecond = ({ navigation }: Props) => {
 
       {/* 1. Phần Logo */}
       <View style={styles.headerContainer}>
-        <LogoDark width={width * 0.6} height="100%" />
+        <LogoLight width={width * 0.6} height="100%" />
       </View>
 
       {/* 2. Phần Hình Ảnh Chính */}

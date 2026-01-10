@@ -1,4 +1,5 @@
 import axiosInstance, { getAccessToken } from './axiosInstance';
+import { Platform } from 'react-native';
 
 // Backend DTOs
 interface ReviewDTO {
@@ -12,6 +13,7 @@ interface ReviewDTO {
     content: string;
     createdAt: string;
     comments: CommentDTO[];
+    images: string[]; // Added images field
 }
 
 interface CommentDTO {
@@ -103,13 +105,23 @@ export const reviewService = {
     uploadReviewImages: async (reviewId: number, images: any[]): Promise<UIReview> => {
         const formData = new FormData();
         images.forEach((img) => {
-            const mimeType = img.mimeType || img.type || 'image/jpeg';
-            const finalType = mimeType === 'image' ? 'image/jpeg' : mimeType;
+            // Fix for Android URI
+            let uri = img.uri;
+            if (Platform.OS === 'android' && !uri.startsWith('file://')) {
+                uri = `file://${uri}`;
+            }
+
+            // Fix for MimeType
+            let type = img.mimeType || img.type;
+            if (!type || type === 'image') {
+                const ext = uri.split('.').pop()?.toLowerCase();
+                type = ext === 'png' ? 'image/png' : 'image/jpeg';
+            }
 
             formData.append('files', { // Note: 'files' matches Backend @RequestPart("files")
-                uri: img.uri,
+                uri: uri,
                 name: img.fileName || `review_${Date.now()}.jpg`,
-                type: finalType
+                type: type
             } as any);
         });
 
@@ -146,11 +158,15 @@ export const reviewService = {
             }
 
             if (!response.ok) {
+                // Check for Max Upload Size error specifically
+                if (data.message && data.message.includes("Maximum upload size exceeded")) {
+                    throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+                }
                 throw new Error(data.message || "Upload failed");
             }
 
             return mapToUIReview(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Upload review images error", error);
             throw error;
         }
@@ -202,7 +218,7 @@ const mapToUIReview = (dto: ReviewDTO): UIReview => {
         rating: dto.rating,
         date: formatDate(dto.createdAt),
         comment: dto.content,
-        images: [],
+        images: dto.images || [], // Correctly mapped
         likes: 0,
         isLiked: false,
         replies: dto.comments ? dto.comments.map(mapToUIReply) : [],

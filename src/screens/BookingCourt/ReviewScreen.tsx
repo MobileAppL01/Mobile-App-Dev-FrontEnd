@@ -263,9 +263,21 @@ export default function ReviewScreen() {
 
             setModalVisible(false);
             loadData();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showNotification("Thao tác thất bại", "error");
+            // Check for 400 error specifically "You have already reviewed this location"
+            if (error.response?.status === 400) {
+                // Try to get message from backend or default to friendly message
+                const msg = error.response.data?.message || "Bạn đã đánh giá sân này rồi!";
+                // If the message is the specific English one, translate it
+                if (msg === "You have already reviewed this location") {
+                    showNotification("Bạn đã đánh giá sân này rồi!", "warning");
+                } else {
+                    showNotification(msg, "warning");
+                }
+            } else {
+                showNotification("Thao tác thất bại", "error");
+            }
         }
     };
 

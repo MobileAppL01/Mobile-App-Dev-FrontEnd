@@ -67,6 +67,8 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     backgroundColor: "#eee",
+    borderWidth: 0.5,
+    borderColor: "#ddd",
   },
 
   clusterContent: {
@@ -266,7 +268,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  
+
   // Nút Thùng rác nhỏ trên card (nếu dùng)
   trashIconBtn: {
     padding: 10,

@@ -12,12 +12,14 @@ import {
   Keyboard,
   Alert,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  StyleSheet
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from "./ManageLocationScreen.styles";
 import { manageCourtService } from "../../../services/manageCourtService";
+import { useNotificationStore } from "../../../store/useNotificationStore";
 
 interface LocationFormProps {
   visible: boolean;
@@ -63,6 +65,8 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
     }
   }, [visible, initialData]);
 
+  const showNotification = useNotificationStore(state => state.showNotification);
+
   const handlePickImage = async () => {
     try {
       // 1. Pick Image (Permissions handled automatically or implicitly)
@@ -70,21 +74,31 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [16, 9],
-        quality: 0.8,
+        quality: 1,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const pickedAsset = result.assets[0];
-        // 3. Upload Immediately
+
+        // Instant Preview
+        const previousUri = imageUri;
+        setImageUri(pickedAsset.uri);
+
+        // 3. Upload in background (UI shows overlay)
         setUploading(true);
         try {
           const uploadRes = await manageCourtService.uploadFile(pickedAsset, 'location');
           if (uploadRes && uploadRes.url) {
-            setImageUri(uploadRes.url); // Save the Cloudinary URL
-            Alert.alert("Thành công", "Đã tải ảnh lên!");
+            setImageUri(uploadRes.url); // Save the Cloudinary URL (Server URL)
+            showNotification("Đã tải ảnh lên!", "success");
           }
-        } catch (error) {
-          Alert.alert("Lỗi tải ảnh", "Không thể tải ảnh lên server.");
+        } catch (error: any) {
+          // Revert if failed
+          setImageUri(previousUri);
+          const msg = error.message && error.message.includes("Dung lượng")
+            ? error.message
+            : "Không thể tải ảnh lên server";
+          showNotification(msg, "error");
         } finally {
           setUploading(false);
         }
@@ -92,6 +106,7 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
     } catch (error) {
       console.log('Pick image error', error);
       setUploading(false);
+      showNotification("Có lỗi khi chọn ảnh", "error");
     }
   };
 
@@ -101,16 +116,21 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
       return;
     }
 
-    onSubmit({
+    const submissionData = {
       name,
       address,
       description,
       pricePerHour: Number(price),
       openTime,
       closeTime,
-      image: imageUri || "string", // Provide URL or placeholder
+      // Fix: Only send image if it's a valid URL or explicitly empty string (to clear)
+      // Avoid sending "string" literal which breaks image loading
+      image: (imageUri && imageUri !== "string") ? imageUri : null,
       courts: initialData ? initialData.courts : [],
-    });
+    };
+
+    console.log("Submitting Location Data:", submissionData);
+    onSubmit(submissionData);
   };
 
   return (
@@ -140,31 +160,48 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
                 {/* --- Image Picker UI --- */}
                 <Text style={styles.label}>Ảnh đại diện</Text>
                 <TouchableOpacity onPress={handlePickImage} style={{
-                  height: 150,
-                  backgroundColor: '#f9f9f9', // Lighter background
-                  borderRadius: 8,
+                  height: 180, // Increased height for better view
+                  backgroundColor: '#f9f9f9',
+                  borderRadius: 12, // Softer corners
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginBottom: 15,
                   overflow: 'hidden',
                   borderWidth: 1,
                   borderColor: '#ddd',
-                  borderStyle: 'dashed'
+                  borderStyle: imageUri ? 'solid' : 'dashed'
                 }}>
-                  {uploading ? (
-                    <ActivityIndicator size="large" color="#3B9AFF" />
-                  ) : imageUri ? (
-                    <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  {imageUri ? (
+                    <>
+                      <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      {uploading && (
+                        <View style={{
+                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                          backgroundColor: 'rgba(0,0,0,0.3)',
+                          justifyContent: 'center',
+                          alignItems: 'center'
+                        }}>
+                          <ActivityIndicator size="large" color="#ffffff" />
+                        </View>
+                      )}
+                    </>
                   ) : (
-                    <View style={{ alignItems: 'center' }}>
-                      <Ionicons name="camera-outline" size={32} color="#888" />
-                      <Text style={{ color: '#666', marginTop: 5 }}>Chạm để chọn ảnh</Text>
-                    </View>
+                    uploading ? (
+                      <ActivityIndicator size="large" color="#3B9AFF" />
+                    ) : (
+                      <View style={{ alignItems: 'center' }}>
+                        <Ionicons name="camera-outline" size={40} color="#888" />
+                        <Text style={{ color: '#666', marginTop: 8, fontWeight: '500' }}>Chạm để tải ảnh bìa</Text>
+                        <Text style={{ color: '#999', fontSize: 10, marginTop: 4 }}>Tỉ lệ 16:9</Text>
+                      </View>
+                    )
                   )}
-                  {/* Badge 'Sửa' nếu đã có ảnh */}
+
+                  {/* Edit Badge */}
                   {!uploading && imageUri && (
-                    <View style={{ position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,0.5)', padding: 5, borderRadius: 5 }}>
-                      <Text style={{ color: 'white', fontSize: 10 }}>Thay đổi</Text>
+                    <View style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="pencil" size={10} color="white" style={{ marginRight: 4 }} />
+                      <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>Sửa</Text>
                     </View>
                   )}
                 </TouchableOpacity>

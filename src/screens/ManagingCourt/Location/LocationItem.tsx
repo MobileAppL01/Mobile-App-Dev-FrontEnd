@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { styles } from "./ManageLocationScreen.styles"; // Import file style chung
 import { manageCourtService } from "../../../services/manageCourtService"; // Import service để gọi API
 import { useCourtStore } from "../../../store/useCourtStore";
+import { useNotificationStore } from "../../../store/useNotificationStore";
 import { useCallback, useEffect } from "react";
 // Kích hoạt LayoutAnimation trên Android
 if (
@@ -44,11 +45,27 @@ const LocationItem: React.FC<LocationItemProps> = ({
   refreshTrigger, // <--- Nhận prop
   onViewReviews, // <--- Nhận prop
 }) => {
+  // DEBUG IMAGE
+  // console.log(`Location [${item.name}] images:`, item.image, item.images);
+
   const [expanded, setExpanded] = useState(false);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loadingPromo, setLoadingPromo] = useState(false);
   const [loaded, setLoaded] = useState(false); // Đánh dấu đã tải dữ liệu chưa
 
+  // State for image source with fallback
+  const placeholderImage = require("../../../assets/images/location.jpg");
+  const [imgSource, setImgSource] = useState<any>(placeholderImage);
+
+  useEffect(() => {
+    if (item.image && typeof item.image === 'string' && item.image.trim() !== "") {
+      setImgSource({ uri: item.image });
+    } else if (item.images && Array.isArray(item.images) && item.images.length > 0 && typeof item.images[0] === 'string' && item.images[0].trim() !== "") {
+      setImgSource({ uri: item.images[0] });
+    } else {
+      setImgSource(placeholderImage);
+    }
+  }, [item]);
 
   const fetchPromotions = useCallback(async () => {
     setLoadingPromo(true);
@@ -105,6 +122,8 @@ const LocationItem: React.FC<LocationItemProps> = ({
     );
   };
   const { deletePromotion } = useCourtStore();
+  const showNotification = useNotificationStore(state => state.showNotification);
+
   const handleDeletePromotion = (promotionId: string) => {
     Alert.alert(
       "Xác nhận xóa",
@@ -123,9 +142,9 @@ const LocationItem: React.FC<LocationItemProps> = ({
               setPromotions((prevList) =>
                 prevList.filter((p) => p.id !== promotionId)
               );
-              Alert.alert("Thành công", "Đã xóa khuyến mãi!");
+              showNotification("Đã xóa khuyến mãi!", "success");
             } catch (error) {
-              Alert.alert("Lỗi", "Không thể xóa khuyến mãi lúc này.");
+              showNotification("Không thể xóa khuyến mãi lúc này.", "error");
             }
           },
         },
@@ -177,8 +196,10 @@ const LocationItem: React.FC<LocationItemProps> = ({
           activeOpacity={0.9}
         >
           <Image
-            source={require("../../../assets/images/location.jpg")}
+            source={imgSource}
             style={styles.clusterImage}
+            resizeMode="cover"
+            onError={() => setImgSource(placeholderImage)}
           />
 
           <View style={styles.clusterContent}>

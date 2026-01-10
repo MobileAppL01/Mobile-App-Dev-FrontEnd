@@ -129,35 +129,42 @@ export default function UserProfileScreen() {
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [1, 1],
-                quality: 0.8,
+                quality: 1,
             });
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
+                const pickedAsset = result.assets[0];
+
+                // 1. Instant Preview (Optimistic Update)
+                const previousAvatar = formData.avatar;
+                setFormData(prev => ({ ...prev, avatar: pickedAsset.uri }));
+
                 setIsLoading(true);
                 try {
-                    const response = await authService.uploadAvatar(result.assets[0]);
+                    const response = await authService.uploadAvatar(pickedAsset);
                     if (response.url) {
+                        // 2. Update with real server URL after success
                         setFormData(prev => ({ ...prev, avatar: response.url }));
-                        // Update User store immediately to reflect change in UI
-                        // Note: If backend doesn't support avatar update in updateProfile, 
-                        // this change will be lost on next fetch unless we handle it locally or fix backend.
-                        // (I have fixed backend DTO already)
                         updateUser({ ...user, avatar: response.url });
+                        showNotification("Cập nhật ảnh đại diện thành công", "success");
                     }
                 } catch (error) {
-                    Alert.alert("Lỗi", "Không thể tải ảnh lên");
+                    // 3. Revert if failed
+                    setFormData(prev => ({ ...prev, avatar: previousAvatar }));
+                    showNotification("Không thể tải ảnh lên", "error");
                 } finally {
                     setIsLoading(false);
                 }
             }
         } catch (error) {
             console.log("Image picker error", error);
+            showNotification("Lỗi chọn ảnh", "error");
         }
     };
 
     const handleSave = async () => {
         if (!formData.fullName.trim()) {
-            Alert.alert("Lỗi", "Tên không được để trống");
+            showNotification("Tên không được để trống", "warning");
             return;
         }
 
@@ -185,7 +192,7 @@ export default function UserProfileScreen() {
 
         } catch (error: any) {
             console.error(error);
-            Alert.alert("Lỗi", error.response?.data?.message || "Không thể cập nhật hồ sơ");
+            showNotification(error.response?.data?.message || "Không thể cập nhật hồ sơ", "error");
         } finally {
             setIsLoading(false);
         }
@@ -226,11 +233,11 @@ export default function UserProfileScreen() {
 
     const handleSubmitChangePassword = async () => {
         if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-            Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
+            showNotification("Vui lòng điền đầy đủ thông tin", "warning");
             return;
         }
         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            Alert.alert("Lỗi", "Mật khẩu mới không khớp");
+            showNotification("Mật khẩu mới không khớp", "warning");
             return;
         }
 
@@ -240,12 +247,12 @@ export default function UserProfileScreen() {
                 oldPassword: passwordForm.oldPassword,
                 newPassword: passwordForm.newPassword
             });
-            Alert.alert("Thành công", "Đổi mật khẩu thành công!");
+            showNotification("Đổi mật khẩu thành công!", "success");
             setIsChangePasswordVisible(false);
             setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error: any) {
             console.error(error);
-            Alert.alert("Lỗi", error.response?.data?.message || error.response?.data || "Đổi mật khẩu thất bại");
+            showNotification(error.response?.data?.message || error.response?.data || "Đổi mật khẩu thất bại", "error");
         } finally {
             setLoadingPassword(false);
         }
