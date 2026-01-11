@@ -191,9 +191,12 @@ export const reviewService = {
     },
 
     updateComment: async (commentId: number, content: string): Promise<UIReply> => {
-        const response = await axiosInstance.put<CommentDTO>(`/reviews/comments/${commentId}`, {
-            content
-        });
+        // Backend expects content as RequestParam, but it's a PUT
+        const response = await axiosInstance.put<CommentDTO>(
+            `/reviews/comments/${commentId}`,
+            null, // Empty body
+            { params: { content } } // Content as query param
+        );
         return mapToUIReply(response.data);
     },
 

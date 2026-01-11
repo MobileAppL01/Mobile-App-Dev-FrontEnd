@@ -92,6 +92,7 @@ export default function RootNavigator() {
           ) : userRole === "ROLE_OWNER" ? (
             <>
               <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
+              <Stack.Screen name="AboutUs" component={AboutUsScreen} />
             </>
           ) : (
             <>

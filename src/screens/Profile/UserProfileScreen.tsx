@@ -97,7 +97,11 @@ export default function UserProfileScreen() {
 
     const [bookingCount, setBookingCount] = useState(0);
 
+    const isPlayer = user?.role === 'PLAYER' || user?.role === 'ROLE_PLAYER';
+
     useEffect(() => {
+        if (!isPlayer) return;
+
         const fetchStats = async () => {
             try {
                 const bookings = await bookingService.getMyBookings();
@@ -109,7 +113,7 @@ export default function UserProfileScreen() {
             }
         };
         fetchStats();
-    }, []);
+    }, [isPlayer]);
 
     const displayUser = {
         name: user?.fullName || "Người dùng",
@@ -313,30 +317,32 @@ export default function UserProfileScreen() {
                 {/* --- BODY CONTENT --- */}
                 <View style={styles.bodyContent}>
 
-                    {/* --- STATS CARD --- */}
-                    <View style={styles.statsCard}>
-                        <View style={styles.statItem}>
-                            <View style={[styles.iconCircle, { backgroundColor: "#E3F2FD" }]}>
-                                <Ionicons name="trophy" size={24} color="#2196F3" />
+                    {/* --- STATS CARD (Only for Players) --- */}
+                    {isPlayer && (
+                        <View style={styles.statsCard}>
+                            <View style={styles.statItem}>
+                                <View style={[styles.iconCircle, { backgroundColor: "#E3F2FD" }]}>
+                                    <Ionicons name="trophy" size={24} color="#2196F3" />
+                                </View>
+                                <View>
+                                    <Text style={styles.statLabel}>Tổng số lần đặt</Text>
+                                    <Text style={styles.statValue}>{displayUser.bookings}</Text>
+                                </View>
                             </View>
-                            <View>
-                                <Text style={styles.statLabel}>Tổng số lần đặt</Text>
-                                <Text style={styles.statValue}>{displayUser.bookings}</Text>
+
+                            <View style={styles.divider} />
+
+                            <View style={styles.statItem}>
+                                <View style={[styles.iconCircle, { backgroundColor: "#FFF3E0" }]}>
+                                    <MaterialCommunityIcons name="medal-outline" size={24} color="#FF9800" />
+                                </View>
+                                <View>
+                                    <Text style={styles.statLabel}>Điểm tích lũy</Text>
+                                    <Text style={styles.statValue}>{displayUser.points}</Text>
+                                </View>
                             </View>
                         </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.statItem}>
-                            <View style={[styles.iconCircle, { backgroundColor: "#FFF3E0" }]}>
-                                <MaterialCommunityIcons name="medal-outline" size={24} color="#FF9800" />
-                            </View>
-                            <View>
-                                <Text style={styles.statLabel}>Điểm tích lũy</Text>
-                                <Text style={styles.statValue}>{displayUser.points}</Text>
-                            </View>
-                        </View>
-                    </View>
+                    )}
 
                     {/* --- FORM INFO --- */}
                     <View style={styles.formCard}>

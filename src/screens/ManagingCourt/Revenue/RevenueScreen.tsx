@@ -41,12 +41,18 @@ interface BookingData {
 
 type RevenueScreenRouteProp = RouteProp<ManagerStackParamList, "Revenue">;
 
+import { useNotificationStore } from "../../../store/useNotificationStore"; // Added import
+import { bookingService } from "../../../services/bookingService"; // Added import
+
+// ... imports
+
 const RevenueScreen = () => {
   const route = useRoute<RevenueScreenRouteProp>();
   const { courtItem } = route.params || {};
 
   const { locations, fetchLocations } = useCourtStore();
   const { token } = useAuthStore();
+  const showNotification = useNotificationStore(state => state.showNotification);
 
   const [selectedLocation, setSelectedLocation] = useState<any>(
     courtItem || null
@@ -58,7 +64,7 @@ const RevenueScreen = () => {
 
   // --- STATE DATE PICKER ---
   const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false); // Dùng để toggle
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // --- 1. INITIAL FETCH LOCATIONS ---
   useEffect(() => {
@@ -73,72 +79,62 @@ const RevenueScreen = () => {
     }
   }, [locations]);
 
-  // --- 2. FETCH REVENUE API ---
-  // --- 2. FETCH REVENUE API ---
+  // --- 2. FETCH REVENUE API (Now using bookingService) ---
   const fetchRevenue = async (currentLoc: any, selectedDate: Date) => {
     if (!currentLoc?.id) return;
     setLoading(true);
 
-    // Định dạng ngày và URL
     const formattedDate = selectedDate.toISOString().split("T")[0];
     const locationId = currentLoc.id;
-    const url = `https://bookington-app.mangobush-e7ff5393.canadacentral.azurecontainerapps.io/api/v1/owner/bookings?locationId=${locationId}&date=${formattedDate}`;
 
     try {
-      console.log("Fetching Revenue:", url);
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log("Fetching Revenue for loc:", locationId);
+      // Use service instead of raw axios
+      const result = await bookingService.getOwnerBookings({
+        locationId: locationId,
+        date: formattedDate
       });
 
-      if (response.data && response.data.result) {
-        setBookings(response.data.result);
-      } else {
-        setBookings([]);
-      }
+      // Ensure result is array (service throws now, but just in case)
+      setBookings(Array.isArray(result) ? result : []);
+
     } catch (error) {
       console.error("Revenue API Error:", error);
+      showNotification("Không thể tải dữ liệu doanh thu", "error"); // Added notification
 
-      // --- THÊM SENTRY REPORT TẠI ĐÂY ---
       Sentry.captureException(error, {
         extra: {
           screen: "RevenueScreen",
           locationId: locationId,
-          locationName: currentLoc?.name,
           dateQuery: formattedDate,
-          apiUrl: url,
-          userToken: token ? "Token exist" : "No token",
         },
       });
-      // ----------------------------------
 
       setBookings([]);
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     if (selectedLocation) {
       fetchRevenue(selectedLocation, date);
     }
   }, [date, selectedLocation]);
 
-  // --- 3. LOGIC DATE PICKER (BẬT/TẮT) ---
+  // ... date picker logic ...
 
   const toggleDatePicker = () => {
     setShowDatePicker(!showDatePicker);
   };
 
   const onChangeDate = (event: any, selectedDate?: Date) => {
-    // Trên Android: Sau khi chọn xong hoặc hủy, picker tự đóng -> ta set false
-    // Trên iOS: Picker là dạng view, ta giữ nguyên hoặc đóng tùy logic
     if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
 
     if (selectedDate) {
       setDate(selectedDate);
-      // Nếu muốn iOS chọn xong đóng luôn thì mở comment dòng dưới:
-      // if (Platform.OS === "ios") setShowDatePicker(false);
     }
   };
 
@@ -162,7 +158,7 @@ const RevenueScreen = () => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount * 1000);
+    }).format(amount);
   };
 
   const getStatusColor = (status: string) => {
@@ -453,7 +449,7 @@ const RevenueScreen = () => {
                   style={[
                     styles.modalItem,
                     selectedLocation?.id === item.id &&
-                      styles.modalItemSelected,
+                    styles.modalItemSelected,
                   ]}
                   onPress={() => handleSelectLocation(item)}
                 >
@@ -468,7 +464,7 @@ const RevenueScreen = () => {
                     style={[
                       styles.modalItemText,
                       selectedLocation?.id === item.id &&
-                        styles.modalItemTextSelected,
+                      styles.modalItemTextSelected,
                     ]}
                   >
                     {item.name}

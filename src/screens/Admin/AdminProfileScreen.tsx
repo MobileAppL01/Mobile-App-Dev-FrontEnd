@@ -19,6 +19,7 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import * as ImagePicker from 'expo-image-picker';
 
 interface InfoFieldProps {
     label: string;
@@ -64,7 +65,8 @@ export default function AdminProfileScreen() {
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
-        phone: ""
+        phone: "",
+        avatar: ""
     });
 
     const [isChangePasswordVisible, setIsChangePasswordVisible] = useState(false);
@@ -80,10 +82,52 @@ export default function AdminProfileScreen() {
             setFormData({
                 fullName: user.fullName || "",
                 email: user.email || "",
-                phone: user.phone || ""
+                phone: user.phone || "",
+                avatar: user.avatar || ""
             });
         }
     }, [user]);
+
+    const pickImage = async () => {
+        if (!isEditing) return;
+
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 1,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const pickedAsset = result.assets[0];
+
+                // 1. Instant Preview (Optimistic Update)
+                const previousAvatar = formData.avatar;
+                setFormData(prev => ({ ...prev, avatar: pickedAsset.uri }));
+
+                setIsLoading(true);
+                try {
+                    const response = await authService.uploadAvatar(pickedAsset);
+                    if (response.url) {
+                        // 2. Update with real server URL after success
+                        setFormData(prev => ({ ...prev, avatar: response.url }));
+                        updateUser({ ...user, avatar: response.url });
+                        showNotification("Cập nhật ảnh đại diện thành công", "success");
+                    }
+                } catch (error) {
+                    // 3. Revert if failed
+                    setFormData(prev => ({ ...prev, avatar: previousAvatar }));
+                    showNotification("Không thể tải ảnh lên", "error");
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        } catch (error) {
+            console.log("Image picker error", error);
+            showNotification("Lỗi chọn ảnh", "error");
+        }
+    };
 
     const displayUser = {
         name: user?.fullName || "Admin",
@@ -103,7 +147,8 @@ export default function AdminProfileScreen() {
             const updatePayload = {
                 fullName: formData.fullName,
                 email: formData.email,
-                phone: formData.phone
+                phone: formData.phone,
+                avatar: formData.avatar
             };
 
             await authService.updateProfile(updatePayload);
@@ -111,7 +156,8 @@ export default function AdminProfileScreen() {
             updateUser({
                 fullName: formData.fullName,
                 phone: formData.phone,
-                email: formData.email
+                email: formData.email,
+                avatar: formData.avatar
             });
 
             showNotification("Cập nhật hồ sơ thành công", "success");
@@ -130,7 +176,8 @@ export default function AdminProfileScreen() {
             setFormData({
                 fullName: user.fullName || "",
                 email: user.email || "",
-                phone: user.phone || ""
+                phone: user.phone || "",
+                avatar: user.avatar || ""
             });
         }
         setIsEditing(false);
@@ -195,7 +242,26 @@ export default function AdminProfileScreen() {
                 {/* --- HEADER --- */}
                 <View style={styles.header}>
                     <View style={styles.headerContent}>
-                        <Image source={{ uri: displayUser.avatar }} style={styles.avatar} />
+                        <TouchableOpacity onPress={pickImage} disabled={!isEditing}>
+                            <View style={{ position: 'relative' }}>
+                                <Image source={{ uri: isEditing && formData.avatar ? formData.avatar : displayUser.avatar }} style={styles.avatar} />
+                                {isEditing && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        right: 15, // Adjusted for margin
+                                        bottom: 0,
+                                        backgroundColor: 'white',
+                                        borderRadius: 15,
+                                        padding: 6,
+                                        borderWidth: 1,
+                                        borderColor: '#eee',
+                                        elevation: 2
+                                    }}>
+                                        <Ionicons name="camera" size={18} color="#333" />
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
 
                         <View style={styles.headerInfo}>
                             <Text style={styles.headerTitle}>Hồ sơ Admin</Text>
@@ -203,6 +269,13 @@ export default function AdminProfileScreen() {
                                 <Text style={styles.vipText}>Administrator</Text>
                             </View>
                         </View>
+
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('AboutUs' as any)}
+                            style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}
+                        >
+                            <Ionicons name="information-circle-outline" size={28} color="white" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 

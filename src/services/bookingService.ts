@@ -185,7 +185,17 @@ export const bookingService = {
       return response.data.result;
     } catch (error) {
       console.error("Error fetching owner bookings:", error);
-      return [];
+      throw error;
+    }
+  },
+
+  updateBookingStatus: async (id: number, status: 'CONFIRMED' | 'REJECTED') => {
+    try {
+      const response = await axiosInstance.put(`/owner/bookings/${id}/status`, { status });
+      return response.data.result;
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+      throw error;
     }
   },
 

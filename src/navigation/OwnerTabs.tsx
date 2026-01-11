@@ -9,6 +9,8 @@ import ManagerNavigator from './ManagerNavigator';
 import OwnerNotificationScreen from '../screens/ManagingCourt/OwnerNotificationScreen';
 import { useInboxStore } from '../store/useInboxStore';
 
+import ManagerBookingScreen from '../screens/ManagingCourt/ManagerBookingScreen';
+
 const Tab = createBottomTabNavigator();
 
 const OwnerTabs = () => {
@@ -47,6 +49,8 @@ const OwnerTabs = () => {
 
           if (route.name === 'Sân của tôi') {
             iconName = focused ? 'business' : 'business-outline';
+          } else if (route.name === 'Lịch đặt') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Thống kê') {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'Thông báo') {
@@ -60,6 +64,7 @@ const OwnerTabs = () => {
       })}
     >
       <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
+      <Tab.Screen name="Lịch đặt" component={ManagerBookingScreen} />
       <Tab.Screen name="Thống kê" component={RevenueScreen} />
       <Tab.Screen
         name="Thông báo"
