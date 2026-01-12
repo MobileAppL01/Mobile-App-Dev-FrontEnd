@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { courtService } from '../../services/courtService';
 import { bookingService } from '../../services/bookingService';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 4;
@@ -120,7 +121,7 @@ export default function BookingTimeSelectionScreen() {
 
         } catch (error) {
             console.error("Load data error", error);
-            Alert.alert("Lỗi", "Không thể tải dữ liệu sân. Vui lòng kiểm tra kết nối.");
+            useNotificationStore.getState().showNotification("Không thể tải dữ liệu sân. Vui lòng kiểm tra kết nối.", "error");
         } finally {
             setIsLoading(false);
         }
@@ -143,7 +144,7 @@ export default function BookingTimeSelectionScreen() {
 
     const handleNext = () => {
         if (!selectedCourtId || selectedSlots.length === 0) {
-            Alert.alert("Chưa chọn giờ", "Vui lòng chọn ít nhất một khung giờ để tiếp tục.");
+            useNotificationStore.getState().showNotification("Vui lòng chọn ít nhất một khung giờ để tiếp tục.", "warning");
             return;
         }
 

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { adminService } from '../../services/adminService';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 interface Owner {
     id: number;
@@ -17,6 +18,7 @@ const AdminDashboardScreen = () => {
     const [owners, setOwners] = useState<Owner[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation<any>();
+    const showNotification = useNotificationStore(state => state.showNotification);
 
     useEffect(() => {
         fetchOwners();
@@ -31,6 +33,7 @@ const AdminDashboardScreen = () => {
             }
         } catch (error) {
             console.log('Error fetching owners:', error);
+            showNotification("Không thể tải danh sách chủ sân", "error");
         } finally {
             setIsLoading(false);
         }

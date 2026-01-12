@@ -23,6 +23,7 @@ import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { ManagerStackParamList } from "../../navigation/ManagerNavigator";
 
 import { useCourtStore } from "../../store/useCourtStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 type ManagerCourtsRouteProp = RouteProp<ManagerStackParamList, "ManagerCourts">;
 
@@ -54,17 +55,17 @@ const ManagerCourtsScreen = () => {
   // --- XỬ LÝ LƯU (THÊM MỚI) ---
   const handleSave = async () => {
     if (!newCourtName.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên sân");
+      useNotificationStore.getState().showNotification("Vui lòng nhập tên sân", "warning");
       return;
     }
 
     try {
       await addCourt(cluster.id, newCourtName);
-      Alert.alert("Thành công", "Đã thêm sân mới!");
+      useNotificationStore.getState().showNotification("Đã thêm sân mới!", "success");
       setModalVisible(false);
       setNewCourtName("");
-    } catch (error) {
-      // Store đã handle lỗi
+    } catch (error: any) {
+      useNotificationStore.getState().showNotification(error.response?.data?.message || "Thêm sân thất bại", "error");
     }
   };
 
@@ -82,8 +83,9 @@ const ManagerCourtsScreen = () => {
             try {
               // Gọi hàm deleteCourt từ store (cần truyền ID sân)
               await deleteCourt(item.id);
-            } catch (error) {
-              // Store đã handle lỗi
+              useNotificationStore.getState().showNotification("Đã xóa sân!", "success");
+            } catch (error: any) {
+              useNotificationStore.getState().showNotification(error.response?.data?.message || "Xóa thất bại", "error");
             }
           },
         },
@@ -96,8 +98,9 @@ const ManagerCourtsScreen = () => {
     const newStatus = value ? "ACTIVE" : "MAINTENANCE";
     try {
       await updateCourtStatus(item.id, newStatus);
-    } catch (error) {
-      Alert.alert("Lỗi", "Không thể cập nhật trạng thái lúc này");
+      useNotificationStore.getState().showNotification("Cập nhật trạng thái thành công", "success");
+    } catch (error: any) {
+      useNotificationStore.getState().showNotification("Không thể cập nhật trạng thái lúc này", "error");
     }
   };
 
@@ -279,7 +282,7 @@ const ManagerCourtsScreen = () => {
                   <Text style={styles.label}>Trạng thái mặc định</Text>
                   <View style={styles.statusBadgePreview}>
                     <Text style={{ color: "#2ecc71", fontWeight: "bold" }}>
-                      ACTIVE
+                      HOẠT ĐỘNG
                     </Text>
                   </View>
 

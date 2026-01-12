@@ -15,6 +15,7 @@ import {
 } from "@expo/vector-icons";
 import { Header } from "../../components/Header";
 import { bookingService } from "../../services/bookingService";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 const { width } = Dimensions.get("window");
 
@@ -49,7 +50,7 @@ const RevenueScreen = () => {
 
     } catch (error) {
       console.error(error);
-      Alert.alert("Lỗi", "Không thể tải dữ liệu doanh thu");
+      useNotificationStore.getState().showNotification("Không thể tải dữ liệu doanh thu", "error");
     } finally {
       setIsLoading(false);
     }

@@ -110,6 +110,7 @@ export default function UserProfileScreen() {
                 }
             } catch (error) {
                 console.log("Error fetching booking stats", error);
+                showNotification("Không thể tải thông tin thống kê", "error");
             }
         };
         fetchStats();

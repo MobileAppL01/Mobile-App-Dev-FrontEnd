@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useInboxStore } from '../store/useInboxStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import Screens
 import HomeScreen from '../screens/BookingCourt/HomeScreen';
@@ -23,6 +24,8 @@ const ClientTabs = () => {
     // return () => clearInterval(interval);
   }, []);
 
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -30,8 +33,8 @@ const ClientTabs = () => {
         tabBarActiveTintColor: '#3B9AFF',
         tabBarInactiveTintColor: '#5E5E5E',
         tabBarStyle: {
-          height: 80,
-          paddingBottom: 20,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
           paddingTop: 10,
           backgroundColor: 'white',
           borderTopWidth: 1,
@@ -45,7 +48,7 @@ const ClientTabs = () => {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
-          marginTop: 2,
+          paddingBottom: insets.bottom > 0 ? 0 : 5, // Adjust text if needed
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;

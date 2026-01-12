@@ -19,6 +19,7 @@ import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
 import { locationService } from '../../services/locationService';
 import { LocationDTO } from '../../types/location';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { courtService } from '../../services/courtService'; // Keep for Provinces/Districts options
 import { Header } from '../../components/Header';
 const { width, height } = Dimensions.get('window');
@@ -171,12 +172,9 @@ export default function HomeScreen() {
       let rawData: LocationDTO[] = [];
       const query = filters?.searchText || searchText;
 
-      // 1. Fetch Data
-      if (query) {
-        rawData = await locationService.getLocationsByAddress(query);
-      } else {
-        rawData = await locationService.getAllLocations();
-      }
+      // 1. Fetch Data (Always fetch all to support Name + Address search locally)
+      // Since backend search API might be limited to address only for now
+      rawData = await locationService.getAllLocations();
 
       // 2. Map to UI Model
       let mapped: Court[] = rawData.map(loc => ({
@@ -195,6 +193,16 @@ export default function HomeScreen() {
       }));
 
       // 3. Client-side Filter
+
+      // Search Filter (Name or Address)
+      if (query) {
+        const q = query.toLowerCase();
+        mapped = mapped.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.address.toLowerCase().includes(q)
+        );
+      }
+
       const city = filters?.city || selectedCity;
       const district = filters?.district || selectedDistrict;
       const min = filters?.min !== undefined ? filters.min : (minPrice ? parseInt(minPrice) : undefined);
@@ -225,6 +233,7 @@ export default function HomeScreen() {
       setCurrentPage(1);
     } catch (error) {
       console.error("Failed to fetch courts:", error);
+      useNotificationStore.getState().showNotification("Không thể tải danh sách sân. Vui lòng thử lại sau.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -238,6 +247,7 @@ export default function HomeScreen() {
       fetchCourts(); // Initial fetch
     } catch (e) {
       console.error("Init Error:", e);
+      useNotificationStore.getState().showNotification("Lỗi khởi tạo dữ liệu.", "error");
       fetchCourts();
     }
   }
