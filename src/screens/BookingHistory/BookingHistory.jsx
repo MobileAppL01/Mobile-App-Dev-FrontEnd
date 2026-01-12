@@ -71,6 +71,23 @@ export default function BookingHistoryScreen() {
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "Chờ xác nhận";
+      case "CONFIRMED":
+        return "Đã xác nhận";
+      case "COMPLETED":
+        return "Hoàn thành";
+      case "CANCELLED":
+        return "Đã hủy";
+      case "REJECTED":
+        return "Bị từ chối";
+      default:
+        return status;
+    }
+  };
+
   // --- API CALL ---
   const fetchBookingHistory = async () => {
     try {
@@ -181,7 +198,7 @@ export default function BookingHistoryScreen() {
             { backgroundColor: getStatusColor(item.status) },
           ]}
         >
-          <Text style={styles.statusText}>{item.status}</Text>
+          <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
         </View>
       </View>
 

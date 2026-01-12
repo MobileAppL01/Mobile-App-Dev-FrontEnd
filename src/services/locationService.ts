@@ -1,4 +1,5 @@
 import axiosInstance, { BASE_URL } from './axiosInstance';
+import { Platform } from 'react-native';
 import { LocationDTO } from '../types/location';
 
 const LOCATIONS_API = BASE_URL.replace('/v1', '/locations');
@@ -25,8 +26,14 @@ export const locationService = {
 
     uploadImage: async (locationId: number, file: any, setPrimary: boolean = false) => {
         const formData = new FormData();
+        // Fix for Android URI
+        let uri = file.uri;
+        if (Platform.OS === 'android' && !uri.startsWith('file://')) {
+            uri = `file://${uri}`;
+        }
+
         formData.append('file', {
-            uri: file.uri,
+            uri: uri,
             name: file.fileName || 'location.jpg',
             type: file.type || 'image/jpeg'
         } as any);

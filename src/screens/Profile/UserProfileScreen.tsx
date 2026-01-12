@@ -148,8 +148,16 @@ export default function UserProfileScreen() {
                     const response = await authService.uploadAvatar(pickedAsset);
                     if (response.url) {
                         // 2. Update with real server URL after success
-                        setFormData(prev => ({ ...prev, avatar: response.url }));
-                        updateUser({ ...user, avatar: response.url });
+                        const newAvatarUrl = response.url;
+                        setFormData(prev => ({ ...prev, avatar: newAvatarUrl }));
+
+                        // Auto-save the profile to persist the new avatar immediately
+                        await authService.updateProfile({
+                            ...formData,
+                            avatar: newAvatarUrl
+                        });
+
+                        updateUser({ ...user, avatar: newAvatarUrl });
                         showNotification("Cập nhật ảnh đại diện thành công", "success");
                     }
                 } catch (error) {

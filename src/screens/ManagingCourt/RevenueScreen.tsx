@@ -59,6 +59,23 @@ const RevenueScreen = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "Chờ xác nhận";
+      case "CONFIRMED":
+        return "Đã thanh toán"; // Changed to Đã thanh toán as per context of Revenue
+      case "COMPLETED":
+        return "Hoàn thành";
+      case "CANCELLED":
+        return "Đã hủy";
+      case "REJECTED":
+        return "Bị từ chối";
+      default:
+        return status;
+    }
+  };
+
   const renderBookingItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       {/* Thông tin người đặt */}
@@ -98,7 +115,7 @@ const RevenueScreen = () => {
 
       {/* Badge Thanh toán */}
       <View style={[styles.statusBadge, item.status !== 'CONFIRMED' && { backgroundColor: '#f1c40f' }]}>
-        <Text style={styles.statusText}>{item.status === 'CONFIRMED' ? 'Đã thanh toán' : item.status}</Text>
+        <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
       </View>
     </View>
   );

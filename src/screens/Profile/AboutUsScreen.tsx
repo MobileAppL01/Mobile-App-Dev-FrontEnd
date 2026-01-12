@@ -58,7 +58,7 @@ const AboutUsScreen = () => {
                         </View>
                         <View style={[styles.certifiedBadge, { backgroundColor: '#E53935' }]}>
                             <Ionicons name="star" size={18} color="#fff" style={{ marginRight: 4 }} />
-                            <Text style={styles.certifiedText}>Top Booking App</Text>
+                            <Text style={styles.certifiedText}>Ứng dụng hàng đầu</Text>
                         </View>
                     </View>
                 </View>
@@ -84,7 +84,7 @@ const AboutUsScreen = () => {
                             <View style={[styles.iconBox, { backgroundColor: '#FFEBEE' }]}>
                                 <Ionicons name="location" size={18} color="#F44336" />
                             </View>
-                            <Text style={styles.contactText}>Ho Chi Minh University of Technology</Text>
+                            <Text style={styles.contactText}>Đại học Bách Khoa TP.HCM</Text>
                         </View>
                     </View>
                 </View>

@@ -41,8 +41,17 @@ export const AdModal: React.FC<AdModalProps> = ({ visible, onClose }) => {
         >
             <View style={styles.container}>
                 <View style={styles.content}>
+                    {/* Header Label */}
+                    <View style={styles.labelContainer}>
+                        <Text style={styles.labelText}>Quảng cáo</Text>
+                    </View>
+
                     {/* Close Button */}
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                    <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={onClose}
+                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                    >
                         <Ionicons name="close-circle" size={32} color="white" />
                     </TouchableOpacity>
 
@@ -53,8 +62,6 @@ export const AdModal: React.FC<AdModalProps> = ({ visible, onClose }) => {
                             resizeMode="contain"
                         />
                     )}
-
-
                 </View>
             </View>
         </Modal>
@@ -73,19 +80,41 @@ const styles = StyleSheet.create({
         height: height * 0.7,
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'relative'
+        position: 'relative',
+        backgroundColor: 'transparent', // Ensure no white bg behind
     },
     adImage: {
         width: '100%',
         height: '100%',
         borderRadius: 12,
     },
+    labelContainer: {
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        zIndex: 100,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+    },
+    labelText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
     closeButton: {
         position: 'absolute',
-        top: -10,
-        right: -10,
-        zIndex: 100, // Ensure it's on top
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        top: -12,
+        right: -12,
+        zIndex: 101,
+        backgroundColor: 'black', // Circle background for the icon
         borderRadius: 20,
+        width: 34,
+        height: 34,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#444'
     }
 });
