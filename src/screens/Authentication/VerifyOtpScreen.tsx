@@ -20,43 +20,61 @@ import { COLORS, SIZES, COMMON_STYLES, AUTH_STYLES } from "../../constants/theme
 import LogoDark from "../../assets/logos/logo_dark.svg";
 import { authService } from "../../services/authService";
 
-type ResetPasswordProps = StackScreenProps<RootStackParamList, "ResetPassword">;
+type VerifyOtpProps = StackScreenProps<RootStackParamList, "VerifyOtp">;
 
-const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
-    const { email, otp } = route.params;
-    // const [otp, setOtp] = useState(["", "", "", "", "", ""]); // Removed
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const VerifyOtpScreen = ({ navigation, route }: VerifyOtpProps) => {
+    const { email } = route.params;
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
+
+    const otpInputs = useRef<Array<TextInput | null>>([]);
     const showNotification = useNotificationStore(state => state.showNotification);
+    const [timer, setTimer] = useState(300); // 5 minutes
 
-    // Removed OTP handlers and Timer effect 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
-    const handleResetPassword = async () => {
-        if (!otp) {
-            showNotification("Thiếu mã OTP", "error");
-            return;
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleOtpChange = (value: string, index: number) => {
+        const newOtp = [...otp];
+        newOtp[index] = value;
+        setOtp(newOtp);
+
+        if (value && index < 5) {
+            otpInputs.current[index + 1]?.focus();
         }
+    };
 
-        if (!password || !confirmPassword) {
-            showNotification("Vui lòng nhập mật khẩu mới", "error");
-            return;
+    const handleBackspace = (key: string, index: number) => {
+        if (key === 'Backspace' && !otp[index] && index > 0) {
+            otpInputs.current[index - 1]?.focus();
         }
-        if (password !== confirmPassword) {
-            showNotification("Mật khẩu không khớp", "error");
+    };
+
+    const handleVerifyOtp = async () => {
+        const otpValue = otp.join("");
+        if (otpValue.length < 6) {
+            showNotification("Vui lòng nhập đủ mã OTP (6 số)", "error");
             return;
         }
 
         setLoading(true);
         try {
-            await authService.resetPassword({ email, otp, newPassword: password });
-            showNotification("Đổi mật khẩu thành công! Vui lòng đăng nhập.", "success");
-            navigation.navigate("Login");
+            await authService.verifyOtp(email, otpValue);
+            // OTP is correct, move to reset password screen
+            navigation.navigate("ResetPassword", { email, otp: otpValue });
         } catch (err: any) {
             console.error(err);
-            let msg = "Đổi mật khẩu thất bại.";
+            let msg = "Xác thực OTP thất bại.";
             if (err.response) {
                 const { data, status } = err.response;
                 if (data?.message) {
@@ -75,7 +93,15 @@ const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
         }
     };
 
-    // handleResendOtp removed
+    const handleResendOtp = async () => {
+        try {
+            await authService.forgotPassword(email);
+            setTimer(300);
+            showNotification("Đã gửi lại mã OTP", "success");
+        } catch (err) {
+            showNotification("Gửi lại thất bại", "error");
+        }
+    };
 
     return (
         <SafeAreaView style={COMMON_STYLES.safeArea}>
@@ -100,69 +126,46 @@ const ResetPasswordScreen = ({ navigation, route }: ResetPasswordProps) => {
                     </View>
 
                     <View style={styles.contentContainer}>
-                        <Text style={styles.title}>Đổi mật khẩu</Text>
+                        <Text style={styles.title}>Nhập mã OTP</Text>
 
                         <Text style={styles.subtitle}>
-                            Nhập mật khẩu mới cho tài khoản {email}.
+                            Mã xác thực được gửi đến {email}.
                         </Text>
 
-                        {/* OTP Input Removed */}
-
-                        <View style={styles.inputGroup}>
-                            <Text style={COMMON_STYLES.label}>Mật khẩu mới</Text>
-                            <View style={styles.passwordContainer}>
+                        <View style={styles.otpContainer}>
+                            {otp.map((digit, index) => (
                                 <TextInput
-                                    style={[COMMON_STYLES.input, styles.passwordInput]}
-                                    placeholder="********"
-                                    placeholderTextColor={COLORS.placeholder}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPassword}
+                                    key={index}
+                                    ref={(ref) => { otpInputs.current[index] = ref; }}
+                                    style={[styles.otpInput, digit ? styles.otpInputFilled : null]}
+                                    value={digit}
+                                    onChangeText={(val) => handleOtpChange(val, index)}
+                                    onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    selectTextOnFocus
                                 />
-                                <TouchableOpacity
-                                    style={styles.eyeIcon}
-                                    onPress={() => setShowPassword(!showPassword)}
-                                >
-                                    <Ionicons
-                                        name={showPassword ? "eye" : "eye-off"}
-                                        size={24}
-                                        color={COLORS.placeholder}
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            ))}
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={COMMON_STYLES.label}>Xác nhận mật khẩu</Text>
-                            <View style={styles.passwordContainer}>
-                                <TextInput
-                                    style={[COMMON_STYLES.input, styles.passwordInput]}
-                                    placeholder="********"
-                                    placeholderTextColor={COLORS.placeholder}
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry={!showConfirmPassword}
-                                />
-                                <TouchableOpacity
-                                    style={styles.eyeIcon}
-                                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                >
-                                    <Ionicons
-                                        name={showConfirmPassword ? "eye" : "eye-off"}
-                                        size={24}
-                                        color={COLORS.placeholder}
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.timerContainer}>
+                            <Text style={{ color: COLORS.placeholder }}>Gửi lại mã OTP sau </Text>
+                            <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>{formatTime(timer)}</Text>
                         </View>
+
+                        {timer === 0 && (
+                            <TouchableOpacity onPress={handleResendOtp} style={{ alignItems: 'center', marginBottom: 20 }}>
+                                <Text style={[COMMON_STYLES.linkText, { textDecorationLine: 'underline' }]}>Gửi lại ngay</Text>
+                            </TouchableOpacity>
+                        )}
 
                         <TouchableOpacity
                             style={[COMMON_STYLES.button, loading && { opacity: 0.7 }]}
-                            onPress={handleResetPassword}
+                            onPress={handleVerifyOtp}
                             disabled={loading}
                         >
                             <Text style={COMMON_STYLES.buttonText}>
-                                {loading ? "Đang xử lý..." : "Đổi mật khẩu"}
+                                {loading ? "Đang xác thực..." : "Tiếp tục"}
                             </Text>
                         </TouchableOpacity>
 
@@ -201,9 +204,6 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         paddingHorizontal: 20
     },
-    inputGroup: {
-        marginBottom: 20,
-    },
     otpContainer: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -226,23 +226,6 @@ const styles = StyleSheet.create({
         borderColor: COLORS.primary,
         backgroundColor: "#F0F8FF",
     },
-    passwordContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.grayBorder,
-        borderRadius: SIZES.borderRadius,
-        backgroundColor: COLORS.white,
-    },
-    passwordInput: {
-        flex: 1,
-        borderWidth: 0,
-        height: 50,
-        paddingVertical: 12,
-    },
-    eyeIcon: {
-        padding: 10,
-    },
     timerContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -250,4 +233,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default ResetPasswordScreen;
+export default VerifyOtpScreen;

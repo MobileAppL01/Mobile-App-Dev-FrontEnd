@@ -138,12 +138,22 @@ function App() {
   const [isAdVisible, setIsAdVisible] = React.useState(false);
 
   useEffect(() => {
+    // Only run ads for OWNER and PLAYER roles.
+    // Explicitly exclude ADMIN and unauthenticated users (Auth screens).
+    if (!user || user.role === 'ADMIN') {
+      return;
+    }
+
     const interval = setInterval(() => {
-      setIsAdVisible(true);
+      // Re-check condition inside interval in case it changes (though useEffect dependency handles most)
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser && (currentUser.role === 'OWNER' || currentUser.role === 'PLAYER')) {
+        setIsAdVisible(true);
+      }
     }, 120000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]); // Re-run when user changes to Reset/Start timer correctly
 
   return (
     <SafeAreaProvider>

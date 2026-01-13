@@ -14,6 +14,11 @@ export const adminService = {
         return response.data;
     },
 
+    getAllUsers: async () => {
+        const response = await axiosInstance.get('');
+        return response.data;
+    },
+
     getOwnerRevenue: async (ownerId: number, month: number, year: number) => {
         const response = await axiosInstance.get(`/admin/owners/${ownerId}/revenue`, {
             params: { month, year }
@@ -39,6 +44,11 @@ export const adminService = {
         const response = await axiosInstance.get(`/admin/owners/${ownerId}/bookings/history`, {
             params: { month, year } // Assuming backend supports this
         });
+        return response.data;
+    },
+
+    deleteUser: async (userId: number) => {
+        const response = await axiosInstance.delete(`/${userId}`);
         return response.data;
     }
 };

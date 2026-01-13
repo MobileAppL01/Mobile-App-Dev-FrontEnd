@@ -7,7 +7,6 @@ import * as FileSystem from 'expo-file-system';
 export const authService = {
     login: async (data: LoginRequest): Promise<AuthResponse> => {
         const response = await axiosInstance.post('/auth', data);
-        console.log("response data at authservice", response.data);
         return response.data;
     },
 

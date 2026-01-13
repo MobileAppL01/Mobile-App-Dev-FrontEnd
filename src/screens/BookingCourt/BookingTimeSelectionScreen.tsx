@@ -226,8 +226,8 @@ export default function BookingTimeSelectionScreen() {
         const isAvailable = availableSlots.includes(hour);
         const isSelected = selectedSlots.includes(hour);
 
-        let cellStyle = styles.slotCellAvailable;
-        let textStyle = styles.slotTextAvailable;
+        let cellStyle: any = styles.slotCellAvailable;
+        let textStyle: any = styles.slotTextAvailable;
 
         if (!isAvailable) {
             cellStyle = styles.slotCellBooked;

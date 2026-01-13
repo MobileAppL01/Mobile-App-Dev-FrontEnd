@@ -57,8 +57,7 @@ export const manageCourtService = {
   createPromotion: async (data: PromotionRequest) => {
     try {
       const response = await axiosInstance.post(`/owner/promotions`, data);
-
-      console.log("Promotion Created:", response.data);
+      // console.log("Promotion Created:", response.data);
       return response.data;
     } catch (error: any) {
       console.error(
@@ -190,24 +189,24 @@ export const manageCourtService = {
       const fileBaseURL = currentBaseURL.replace(/\/v1$/, ""); // Remove /v1 at end
       const fullUrl = `${fileBaseURL}/files/upload/${type}`;
 
-      console.log(`[Upload] Starting upload to ${fullUrl}`);
-      console.log(`[Upload] Original File URI: ${file.uri}`);
+      // console.log(`[Upload] Starting upload to ${fullUrl}`);
+      // console.log(`[Upload] Original File URI: ${file.uri}`);
 
       // --- COMPRESSION LOGIC ---
       let uploadUri = file.uri;
       try {
         const fileInfo = await FileSystem.getInfoAsync(file.uri);
         if (fileInfo.exists && fileInfo.size > 1 * 1024 * 1024) { // Only compress if > 1MB
-          console.log(`[Upload] File size ${fileInfo.size} > 1MB, compressing...`);
+          // console.log(`[Upload] File size ${fileInfo.size} > 1MB, compressing...`);
           const manipResult = await manipulateAsync(
             file.uri,
             [{ resize: { width: 1200 } }], // Resize width to 1200px (Balance quality/size)
             { compress: 0.8, format: SaveFormat.JPEG } // Compress to 80% quality
           );
           uploadUri = manipResult.uri;
-          console.log(`[Upload] Compressed File URI: ${uploadUri}`);
+          // console.log(`[Upload] Compressed File URI: ${uploadUri}`);
         } else {
-          console.log(`[Upload] File size within limit or unknown, skipping compression.`);
+          // console.log(`[Upload] File size within limit or unknown, skipping compression.`);
         }
       } catch (compError) {
         console.warn("[Upload] Compression check failed, using original file:", compError);
@@ -248,7 +247,7 @@ export const manageCourtService = {
       });
 
       const text = await response.text();
-      console.log(`[Upload] Response status: ${response.status}`);
+      // console.log(`[Upload] Response status: ${response.status}`);
 
       let json;
       try {

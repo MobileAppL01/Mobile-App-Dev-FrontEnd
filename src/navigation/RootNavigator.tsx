@@ -26,6 +26,7 @@ import BookingTimeSelectionScreen from "../screens/BookingCourt/BookingTimeSelec
 import BookingConfirmScreen from "../screens/BookingCourt/BookingConfirmScreen";
 import PaymentQRScreen from "../screens/Payment/PaymentQRScreen";
 import ForgotPasswordScreen from "../screens/Authentication/ForgotPasswordScreen";
+import VerifyOtpScreen from "../screens/Authentication/VerifyOtpScreen";
 import ResetPasswordScreen from "../screens/Authentication/ResetPasswordScreen";
 import PaymentWebViewScreen from "../screens/Payment/PaymentWebViewScreen";
 import AboutUsScreen from "../screens/Profile/AboutUsScreen";
@@ -40,7 +41,8 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: { method?: string } | undefined;
   ForgotPassword: undefined;
-  ResetPassword: { email: string };
+  ResetPassword: { email: string; otp: string }; // Updated to include otp
+  VerifyOtp: { email: string };
   ManagerHome: undefined;
   ManagerRevenue: undefined;
   PaymentWebView: { paymentUrl: string; booking: any; totalPrice: number };
@@ -76,15 +78,12 @@ export default function RootNavigator() {
     }
   }, [navigationRef]);
 
-  console.log("userrole at Root\n", userRole);
-
   return (
     // 4. Gắn ref vào NavigationContainer
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           userRole === "ROLE_ADMIN" ? (
-            // 🟢 TRƯỜNG HỢP 1: LÀ ADMIN
             <>
               <Stack.Screen name="AdminTabs" component={AdminTabs} />
               <Stack.Screen name="AdminOwnerRevenue" component={AdminOwnerRevenueScreen} />
@@ -144,6 +143,10 @@ export default function RootNavigator() {
             <Stack.Screen
               name="ForgotPassword"
               component={ForgotPasswordScreen}
+            />
+            <Stack.Screen
+              name="VerifyOtp"
+              component={VerifyOtpScreen}
             />
             <Stack.Screen
               name="ResetPassword"

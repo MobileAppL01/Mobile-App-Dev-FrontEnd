@@ -37,7 +37,7 @@ const ForgotPasswordScreen = ({ navigation }: ForgotPasswordProps) => {
         try {
             await authService.forgotPassword(email);
             showNotification("Mã OTP đã được gửi đến email của bạn.", "success");
-            navigation.navigate("ResetPassword", { email });
+            navigation.navigate("VerifyOtp", { email });
         } catch (err: any) {
             console.error(err);
             // Mock success for now if API is not real

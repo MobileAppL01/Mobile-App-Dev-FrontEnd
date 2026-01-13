@@ -92,8 +92,6 @@ export const useAuthStore = create<AuthState>()(
             avatar: (response as any).avatar || "https://i.pravatar.cc/300",
           };
 
-
-          console.log("access token at store", response.token);
           setAccessToken(response.token);
 
           set({
@@ -108,7 +106,6 @@ export const useAuthStore = create<AuthState>()(
           // Fetch full profile to ensure avatar and other details are up to date
           await get().fetchProfile();
         } catch (error: any) {
-          console.log("Login failed:", error.message);
           set({
             isLoading: false,
             error: error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại!"
@@ -151,10 +148,8 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
-        // Hàm này chạy ngay sau khi data được load từ AsyncStorage xong
         if (state?.token) {
-          console.log("Rehydrated token:", state.token);
-          setAccessToken(state.token); // Nạp token vào axios ngay lập tức
+          setAccessToken(state.token);
         }
       },
     }

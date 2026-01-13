@@ -98,9 +98,9 @@ const AdminOwnerRevenueScreen = () => {
             </View>
 
             <View style={styles.filterContainer}>
-                <Text style={styles.filterLabel}>Tháng {date.getMonth() + 1}/{date.getFullYear()}</Text>
+                <Text style={styles.filterLabel}>Ngày {date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</Text>
                 <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.filterButton}>
-                    <Text style={styles.filterButtonText}>Chọn tháng</Text>
+                    <Text style={styles.filterButtonText}>Chọn ngày</Text>
                     <Ionicons name="calendar-outline" size={20} color="#fff" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
             </View>
@@ -141,14 +141,9 @@ const AdminOwnerRevenueScreen = () => {
                             color="#2ecc71"
                             icon="checkmark-done-circle" // Updated icon
                         />
+
                         <StatCard
-                            title="Hoàn thành"
-                            value={stats?.completedBookings}
-                            color="#4CAF50"
-                            icon="checkmark-circle"
-                        />
-                        <StatCard
-                            title="Chờ duyệt"
+                            title="Chờ xác nhận"
                             value={stats?.pendingBookings}
                             color="#FF9800"
                             icon="time"

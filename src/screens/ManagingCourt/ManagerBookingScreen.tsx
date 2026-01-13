@@ -124,7 +124,7 @@ const ManagerBookingScreen = () => {
 
         const getStatusText = (status: string, paymentMethod: string) => {
             switch (status) {
-                case 'PENDING': return 'Chờ duyệt';
+                case 'PENDING': return 'Chờ xác nhận';
                 case 'CONFIRMED':
                     if (paymentMethod === 'VNPAY' || paymentMethod === 'PAY_OS') {
                         return 'Đã thanh toán'; // Paid

@@ -32,14 +32,14 @@ export const locationService = {
         try {
             const fileInfo = await FileSystem.getInfoAsync(file.uri);
             if (fileInfo.exists && fileInfo.size > 1 * 1024 * 1024) { // > 1MB
-                console.log(`[Location] File size ${fileInfo.size} > 1MB, compressing...`);
+                // console.log(`[Location] File size ${fileInfo.size} > 1MB, compressing...`);
                 const manipResult = await manipulateAsync(
                     file.uri,
                     [{ resize: { width: 1200 } }], // Reasonable size for location images
                     { compress: 0.8, format: SaveFormat.JPEG }
                 );
                 uploadUri = manipResult.uri;
-                console.log(`[Location] Compressed URI: ${uploadUri}`);
+                // console.log(`[Location] Compressed URI: ${uploadUri}`);
             }
         } catch (compError) {
             console.warn("[Location] Compression check failed:", compError);
