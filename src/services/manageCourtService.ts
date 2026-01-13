@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
-import axiosInstance, { getAccessToken } from './axiosInstance';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
+import axiosInstance, { getAccessToken, BASE_URL } from './axiosInstance';
 // Hãy đảm bảo đường dẫn import type Location đúng với file bạn định nghĩa
 import { Location } from "../store/useCourtStore";
 
@@ -189,10 +191,31 @@ export const manageCourtService = {
       const fullUrl = `${fileBaseURL}/files/upload/${type}`;
 
       console.log(`[Upload] Starting upload to ${fullUrl}`);
-      console.log(`[Upload] File URI: ${file.uri}`);
+      console.log(`[Upload] Original File URI: ${file.uri}`);
+
+      // --- COMPRESSION LOGIC ---
+      let uploadUri = file.uri;
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(file.uri);
+        if (fileInfo.exists && fileInfo.size > 1 * 1024 * 1024) { // Only compress if > 1MB
+          console.log(`[Upload] File size ${fileInfo.size} > 1MB, compressing...`);
+          const manipResult = await manipulateAsync(
+            file.uri,
+            [{ resize: { width: 1200 } }], // Resize width to 1200px (Balance quality/size)
+            { compress: 0.8, format: SaveFormat.JPEG } // Compress to 80% quality
+          );
+          uploadUri = manipResult.uri;
+          console.log(`[Upload] Compressed File URI: ${uploadUri}`);
+        } else {
+          console.log(`[Upload] File size within limit or unknown, skipping compression.`);
+        }
+      } catch (compError) {
+        console.warn("[Upload] Compression check failed, using original file:", compError);
+      }
+      // --- COMPRESSION END ---
 
       // Fix Android URI
-      let uri = file.uri;
+      let uri = uploadUri;
       if (Platform.OS === 'android' && !uri.startsWith('file://')) {
         uri = `file://${uri}`;
       }
@@ -237,20 +260,19 @@ export const manageCourtService = {
 
       if (!response.ok) {
         // Handle Max Upload Size
-        if (json.message && json.message.includes("Maximum upload size exceeded")) {
-          throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
+        if ((json.message && json.message.includes("Maximum upload size exceeded")) || text.includes("Maximum upload size exceeded")) {
+          throw new Error("Ảnh quá lớn, vui lòng chọn ảnh có dung lượng nhỏ hơn.");
         }
-        if (text.includes("Maximum upload size exceeded")) {
-          throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
-        }
-        throw new Error(json.message || "Upload failed");
+
+        // Pass exact backend error message
+        throw new Error(json.message || `Lỗi tải ảnh: ${response.status}`);
       }
 
       return json;
     } catch (error: any) {
       console.error("[Upload] Error:", error);
       // Rethrow friendly error if caught from above
-      if (error.message && error.message.includes("Dung lượng ảnh quá lớn")) {
+      if (error.message && error.message.includes("Ảnh quá lớn")) {
         throw error;
       }
       throw error;

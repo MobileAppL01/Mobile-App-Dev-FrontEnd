@@ -64,7 +64,7 @@ const OwnerTabs = () => {
       })}
     >
       <Tab.Screen name="Sân của tôi" component={ManagerNavigator} />
-      <Tab.Screen name="Lịch đặt" component={ManagerBookingScreen} />
+      {/* <Tab.Screen name="Lịch đặt" component={ManagerBookingScreen} /> -> Removed as per requirement */}
       <Tab.Screen name="Thống kê" component={RevenueScreen} />
       <Tab.Screen
         name="Thông báo"

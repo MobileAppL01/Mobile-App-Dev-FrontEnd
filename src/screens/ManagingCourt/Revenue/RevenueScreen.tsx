@@ -9,6 +9,7 @@ import {
   Modal,
   Pressable,
   Button,
+  Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,7 +35,7 @@ interface BookingData {
   startTimeSlot: string | null;
   endTimeSlot: string | null;
   totalPrice: number;
-  status: "PENDING" | "SUCCESS" | "CANCELLED" | "COMPLETED";
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELED" | "EXPIRED";
   bookingDate: string;
   paymentMethod: string;
 }
@@ -140,7 +141,18 @@ const RevenueScreen = () => {
 
   // --- HELPERS ---
   const totalRevenue = useMemo(() => {
-    return bookings.reduce((sum, item) => sum + item.totalPrice, 0);
+    return bookings.reduce((sum, item) => {
+      // Only count actual revenue-generating statuses
+      // PENDING: Not yet confirmed/paid (for Cash/Transfer) -> Exclude
+      // CANCELED/EXPIRED: Lost -> Exclude
+      // CONFIRMED: Deposit paid or Owner accepted (Reliable) -> Include
+      // COMPLETED: Done -> Include
+      // SUCCESS: (Legacy) -> Include
+      if (['CONFIRMED', 'COMPLETED', 'SUCCESS'].includes(item.status)) {
+        return sum + item.totalPrice;
+      }
+      return sum;
+    }, 0);
   }, [bookings]);
 
   const handleSelectLocation = (loc: any) => {
@@ -161,38 +173,104 @@ const RevenueScreen = () => {
     }).format(amount);
   };
 
+  // --- UPDATE STATUS ---
+  const handleUpdateStatus = (bookingId: number, currentStatus: string) => {
+    // Only allow update if status is PENDING (waiting for confirm) or CONFIRMED (waiting for completion/cancel)
+    // Actually user requirement: "vnpay và cash đều phải chuyển khoản, cái nào chưa được xác nhận thì giữ lâu có thể có quyền xác nhận hoặc từ chối"
+    // So mostly target PENDING bookings.
+    if (currentStatus !== 'PENDING') {
+      // Optional: Allow cancelling CONFIRMED?
+      if (currentStatus === 'CONFIRMED') {
+        Alert.alert(
+          "Hủy đơn hàng",
+          "Đơn này đã xác nhận. Bạn có muốn Hủy đơn này không (khách không đến/không thanh toán)?",
+          [
+            { text: "Quay lại", style: "cancel" },
+            {
+              text: "Hủy đơn",
+              style: "destructive",
+              onPress: () => processUpdate(bookingId, 'CANCELED')
+            }
+          ]
+        );
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Xử lý đơn đặt sân",
+      "Bạn muốn làm gì với đơn đặt này?",
+      [
+        { text: "Đóng", style: "cancel" },
+        {
+          text: "Từ chối / Hủy",
+          style: "destructive",
+          onPress: () => processUpdate(bookingId, 'CANCELED')
+        },
+        {
+          text: "Xác nhận đơn",
+          style: "default",
+          onPress: () => processUpdate(bookingId, 'CONFIRMED')
+        }
+      ]
+    );
+  };
+
+  const processUpdate = async (bookingId: number, status: 'CONFIRMED' | 'CANCELED') => {
+    setLoading(true);
+    try {
+      await bookingService.updateBookingStatus(bookingId, status);
+      showNotification(`Đã ${status === 'CONFIRMED' ? 'xác nhận' : 'hủy'} đơn thành công!`, "success");
+      // Refresh list
+      fetchRevenue(selectedLocation, date);
+    } catch (error) {
+      console.error("Update Error:", error);
+      showNotification("Cập nhật trạng thái thất bại.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "PENDING":
-        return "#f1c40f";
+        return "#f1c40f"; // Warning status
+      case "CONFIRMED":
+        return "#3B9AFF"; // Blue for confirmed
       case "SUCCESS":
       case "COMPLETED":
-        return "#2ecc71";
+        return "#2ecc71"; // Green for done
       case "CANCELLED":
+      case "CANCELED":
         return "#e74c3c";
       default:
         return "#95a5a6";
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
+  const getStatusText = (item: BookingData) => {
+    switch (item.status) {
       case "PENDING":
-        return "Chờ thanh toán";
-      case "SUCCESS":
-        return "Đã thanh toán";
+        return item.paymentMethod === 'VNPAY' ? "Chờ thanh toán" : "Chờ xác nhận";
+      case "CONFIRMED":
+        return "Đã xác nhận";
       case "COMPLETED":
         return "Hoàn thành";
-      case "CANCELLED":
+      case "CANCELED":
         return "Đã hủy";
       default:
-        return status;
+        return item.status;
     }
   };
 
   // --- RENDER ITEMS ---
   const renderBookingItem = ({ item }: { item: BookingData }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onLongPress={() => handleUpdateStatus(item.id, item.status)}
+      delayLongPress={500} // hold 0.5s
+    >
       <View style={styles.row}>
         <Ionicons
           name="person-outline"
@@ -249,9 +327,9 @@ const RevenueScreen = () => {
           { backgroundColor: getStatusColor(item.status) },
         ]}
       >
-        <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+        <Text style={styles.statusText}>{getStatusText(item)}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

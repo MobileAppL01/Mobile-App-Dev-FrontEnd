@@ -1,6 +1,8 @@
 import axiosInstance, { BASE_URL } from './axiosInstance';
 import { Platform } from 'react-native';
 import { LocationDTO } from '../types/location';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 
 const LOCATIONS_API = BASE_URL.replace('/v1', '/locations');
 
@@ -25,9 +27,28 @@ export const locationService = {
     },
 
     uploadImage: async (locationId: number, file: any, setPrimary: boolean = false) => {
+        // --- COMPRESSION LOGIC ---
+        let uploadUri = file.uri;
+        try {
+            const fileInfo = await FileSystem.getInfoAsync(file.uri);
+            if (fileInfo.exists && fileInfo.size > 1 * 1024 * 1024) { // > 1MB
+                console.log(`[Location] File size ${fileInfo.size} > 1MB, compressing...`);
+                const manipResult = await manipulateAsync(
+                    file.uri,
+                    [{ resize: { width: 1200 } }], // Reasonable size for location images
+                    { compress: 0.8, format: SaveFormat.JPEG }
+                );
+                uploadUri = manipResult.uri;
+                console.log(`[Location] Compressed URI: ${uploadUri}`);
+            }
+        } catch (compError) {
+            console.warn("[Location] Compression check failed:", compError);
+        }
+        // --- END COMPRESSION ---
+
         const formData = new FormData();
         // Fix for Android URI
-        let uri = file.uri;
+        let uri = uploadUri;
         if (Platform.OS === 'android' && !uri.startsWith('file://')) {
             uri = `file://${uri}`;
         }
@@ -39,10 +60,19 @@ export const locationService = {
         } as any);
         formData.append('setPrimary', String(setPrimary));
 
-        const response = await axiosInstance.post(`${LOCATIONS_API}/${locationId}/images`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`${LOCATIONS_API}/${locationId}/images`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error("Upload location image error:", error);
+            const msg = error.response?.data?.message || error.message;
+            if (msg && msg.includes("Maximum upload size exceeded")) {
+                throw new Error("Ảnh quá lớn, vui lòng chọn ảnh có dung lượng nhỏ hơn.");
+            }
+            throw new Error(msg || "Lỗi tải ảnh lên server");
+        }
     },
 
     getImages: async (locationId: number) => {

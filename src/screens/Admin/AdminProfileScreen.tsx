@@ -115,10 +115,12 @@ export default function AdminProfileScreen() {
                         updateUser({ ...user, avatar: response.url });
                         showNotification("Cập nhật ảnh đại diện thành công", "success");
                     }
-                } catch (error) {
+                } catch (error: any) {
                     // 3. Revert if failed
                     setFormData(prev => ({ ...prev, avatar: previousAvatar }));
-                    showNotification("Không thể tải ảnh lên", "error");
+                    console.error("Avatar upload error:", error);
+                    const msg = error.message || "Không thể tải ảnh lên";
+                    showNotification(msg, "error");
                 } finally {
                     setIsLoading(false);
                 }

@@ -95,9 +95,9 @@ const LocationFormModal: React.FC<LocationFormProps> = ({
         } catch (error: any) {
           // Revert if failed
           setImageUri(previousUri);
-          const msg = error.message && error.message.includes("Dung lượng")
-            ? error.message
-            : "Không thể tải ảnh lên server";
+          console.error("Upload error:", error);
+          // Service already throws user-friendly message for size errors
+          const msg = error.message || "Không thể tải ảnh lên server";
           showNotification(msg, "error");
         } finally {
           setUploading(false);

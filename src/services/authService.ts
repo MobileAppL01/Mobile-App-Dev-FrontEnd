@@ -1,6 +1,8 @@
 import axiosInstance, { getAccessToken } from './axiosInstance';
 import { Platform } from 'react-native';
 import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 
 export const authService = {
     login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -62,12 +64,29 @@ export const authService = {
     },
 
     uploadAvatar: async (file: any) => {
+        // --- COMPRESSION LOGIC ---
+        let uploadUri = file.uri;
+        try {
+            const fileInfo = await FileSystem.getInfoAsync(file.uri);
+            if (fileInfo.exists && fileInfo.size > 1 * 1024 * 1024) { // > 1MB
+                console.log(`[Avatar] File size ${fileInfo.size} > 1MB, compressing...`);
+                const manipResult = await manipulateAsync(
+                    file.uri,
+                    [{ resize: { width: 800 } }], // Avatar can be smaller (800px)
+                    { compress: 0.8, format: SaveFormat.JPEG }
+                );
+                uploadUri = manipResult.uri;
+                console.log(`[Avatar] Compressed URI: ${uploadUri}`);
+            }
+        } catch (compError) {
+            console.warn("[Avatar] Compression check failed:", compError);
+        }
+        // --- END COMPRESSION ---
+
         const formData = new FormData();
 
-        // Fix for Android: Remove 'file://' prefix if present to normalize, then add it back correctly if needed
-        // Actually, for FormData on Android, it OFTEN needs 'file://'.
-        // Expo Image Picker usually returns 'file:///...' on Android, but let's be safe.
-        let uri = file.uri;
+        // Fix for Android
+        let uri = uploadUri;
         if (Platform.OS === 'android' && !uri.startsWith('file://')) {
             uri = `file://${uri}`;
         }
@@ -92,9 +111,6 @@ export const authService = {
             baseURL = baseURL.slice(0, -1);
         }
         // Strip /v1 if present to target /api/files... not /api/v1/files...
-        // Note: Check if backend really follows this convention. 
-        // Based on previous comments, backend FileController is at /api/files (or /files relative to root context)
-        // If baseURL is .../api/v1, we want .../api
         if (baseURL.endsWith("/v1")) {
             baseURL = baseURL.replace(/\/v1$/, "");
         }
@@ -108,7 +124,6 @@ export const authService = {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    // Do NOT set Content-Type for FormData; fetch sets it with boundary
                     'Accept': 'application/json',
                 },
                 body: formData,
@@ -124,29 +139,16 @@ export const authService = {
             }
 
             if (!response.ok) {
-                // 'text' already contains the response body, 'data' contains parsed JSON if successful
-                try {
-                    // Check if 'data' (parsed JSON) contains the message
-                    if (data.message && data.message.includes("Maximum upload size exceeded")) {
-                        throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
-                    }
-                    throw new Error(data.message || 'Upload failed');
-                } catch (e: any) {
-                    // If parsing 'data' failed or 'data.message' wasn't the issue, check raw 'text'
-                    if (text.includes("Maximum upload size exceeded")) {
-                        throw new Error("Dung lượng ảnh quá lớn (Tối đa 5MB).");
-                    }
-                    // If specific custom error was thrown inside try, rethrow it
-                    if (e.message && e.message.includes("Dung lượng")) throw e;
-
-                    throw new Error('Upload failed');
+                if ((data.message && data.message.includes("Maximum upload size exceeded")) || text.includes("Maximum upload size exceeded")) {
+                    throw new Error("Ảnh quá lớn, vui lòng chọn ảnh có dung lượng nhỏ hơn.");
                 }
+                // Propagate exact error
+                throw new Error(data.message || `Lỗi tải ảnh: ${response.status}`);
             }
-            return data; // Return the already parsed 'data' if response was OK
+            return data;
         } catch (error) {
             console.error("Upload avatar error:", error);
             throw error;
         }
     }
 };
-

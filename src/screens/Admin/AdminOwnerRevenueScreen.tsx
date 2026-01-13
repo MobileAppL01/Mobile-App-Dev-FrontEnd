@@ -136,6 +136,12 @@ const AdminOwnerRevenueScreen = () => {
                             icon="list"
                         />
                         <StatCard
+                            title="Đã xác nhận"
+                            value={(stats?.totalBookings || 0) - ((stats?.pendingBookings || 0) + (stats?.completedBookings || 0) + (stats?.canceledBookings || 0))}
+                            color="#2ecc71"
+                            icon="checkmark-done-circle" // Updated icon
+                        />
+                        <StatCard
                             title="Hoàn thành"
                             value={stats?.completedBookings}
                             color="#4CAF50"
@@ -161,69 +167,13 @@ const AdminOwnerRevenueScreen = () => {
                     ) : (
                         locationStats.map((item) => (
                             <View key={item.locationId} style={styles.courtItem}>
-                                <View>
+                                <View style={{ flex: 1, marginRight: 10 }}>
                                     <Text style={styles.courtName}>{item.locationName}</Text>
                                     <Text style={styles.locationName}>{item.locationAddress}</Text>
                                 </View>
                                 <Text style={styles.courtRevenue}>{item.totalRevenue.toLocaleString('vi-VN')} đ</Text>
                             </View>
                         ))
-                    )}
-
-                    <Text style={styles.sectionTitle}>Danh sách hóa đơn</Text>
-                    {bookings.length === 0 ? (
-                        <Text style={styles.emptyText}>Chi tiết danh sách hóa đơn không khả dụng.</Text>
-                    ) : (
-                        bookings.map((item: any, index: number) => {
-                            let statusText = item.status;
-                            let statusColor = '#999';
-
-                            switch (item.status) {
-                                case "PENDING":
-                                    statusText = "Chờ xác nhận";
-                                    statusColor = "#f39c12";
-                                    break;
-                                case "COMPLETED":
-                                    statusText = "Hoàn thành";
-                                    statusColor = "#27ae60";
-                                    break;
-                                case "CANCELED":
-                                case "CANCELLED":
-                                    statusText = "Đã hủy";
-                                    statusColor = "#e74c3c";
-                                    break;
-                                case "EXPIRED":
-                                    statusText = "Hết hạn";
-                                    statusColor = "#95a5a6";
-                                    break;
-                                case "CONFIRMED":
-                                    if (item.paymentMethod === 'VNPAY' || item.paymentMethod === 'PAY_OS') {
-                                        statusText = "Đã thanh toán";
-                                        statusColor = "#2ecc71";
-                                    } else {
-                                        statusText = "Chờ thanh toán";
-                                        statusColor = "#f1c40f";
-                                    }
-                                    break;
-                            }
-
-                            return (
-                                <View key={index} style={styles.bookingItem}>
-                                    <View style={styles.bookingRow}>
-                                        <Text style={styles.bookingId}>#{item.id}</Text>
-                                        <Text style={[styles.bookingStatus, { color: statusColor }]}>
-                                            {statusText}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.bookingText}>{item.courtName} - {item.locationName}</Text>
-                                    <Text style={styles.bookingText}>{item.bookingDate} | {item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</Text>
-                                    <View style={styles.bookingRow}>
-                                        <Text style={styles.bookingMethod}>{item.paymentMethod || 'CASH'}</Text>
-                                        <Text style={styles.bookingPrice}>{item.totalPrice?.toLocaleString('vi-VN')} đ</Text>
-                                    </View>
-                                </View>
-                            );
-                        })
                     )}
                 </ScrollView>
             )}

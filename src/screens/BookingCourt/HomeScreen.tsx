@@ -19,6 +19,7 @@ import LogoDark from "../../assets/logos/logo_dark.svg";
 import { VIETNAM_LOCATIONS } from '../../constants/VietnamLocation';
 import { locationService } from '../../services/locationService';
 import { LocationDTO } from '../../types/location';
+import { BASE_URL } from '../../services/axiosInstance';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { courtService } from '../../services/courtService'; // Keep for Provinces/Districts options
 import { Header } from '../../components/Header';
@@ -177,20 +178,54 @@ export default function HomeScreen() {
       rawData = await locationService.getAllLocations();
 
       // 2. Map to UI Model
-      let mapped: Court[] = rawData.map(loc => ({
-        id: loc.id,
-        locationId: loc.id, // Ensure explicit locationId for CourtDetail usage
-        name: loc.name,
-        address: loc.address,
-        rating: loc.rating || 5,
-        pricePerHour: loc.pricePerHour,
-        openTime: "06:00", // Default
-        closeTime: "22:00", // Default
-        image: (loc as any).image ? { uri: (loc as any).image } : { uri: null },
-        phone: "0123456789",
-        description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ.",
-        status: loc.status
-      }));
+      // Clean up base URL for images
+      let baseUrl = BASE_URL;
+      if (baseUrl.endsWith("/v1")) {
+        baseUrl = baseUrl.replace(/\/v1$/, "");
+      }
+
+      let mapped: Court[] = rawData.map(loc => {
+        let candidate = null;
+
+        // 1. Try 'image' property
+        if ((loc as any).image && typeof (loc as any).image === 'string' && (loc as any).image.trim() !== '') {
+          candidate = (loc as any).image;
+        }
+        // 2. Try 'images' array property (fallback)
+        else if ((loc as any).images && Array.isArray((loc as any).images) && (loc as any).images.length > 0) {
+          const firstImg = (loc as any).images[0];
+          if (typeof firstImg === 'string' && firstImg.trim() !== '') {
+            candidate = firstImg;
+          } else if (typeof firstImg === 'object' && firstImg.secureUrl) {
+            // If backend returns object { secureUrl: "..." }
+            candidate = firstImg.secureUrl;
+          }
+        }
+
+        let imageUri = null;
+        if (candidate) {
+          if (candidate.startsWith('http')) {
+            imageUri = candidate;
+          } else {
+            imageUri = `${baseUrl}/files/${candidate}`;
+          }
+        }
+
+        return {
+          id: loc.id,
+          locationId: loc.id, // Ensure explicit locationId for CourtDetail usage
+          name: loc.name,
+          address: loc.address,
+          rating: loc.rating || 5,
+          pricePerHour: loc.pricePerHour,
+          openTime: "06:00", // Default
+          closeTime: "22:00", // Default
+          image: imageUri ? { uri: imageUri } : { uri: null },
+          phone: "0123456789",
+          description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ.",
+          status: loc.status
+        }
+      });
 
       // 3. Client-side Filter
 

@@ -225,7 +225,7 @@ const ManagerCourtsScreen = () => {
               <Text style={{ color: "#999" }}>Cụm này chưa có sân nào</Text>
             </View>
           }
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 15 }}
         />
       )}
 
@@ -304,7 +304,7 @@ const ManagerCourtsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", paddingHorizontal: 15 },
+  container: { flex: 1, backgroundColor: "#fff" }, // Removed paddingHorizontal
   center: {
     flex: 1,
     justifyContent: "center",
@@ -319,6 +319,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     marginTop: 10,
+    paddingHorizontal: 15, // Added padding
   },
   backButton: { padding: 5, marginRight: 10 },
   subHeaderTitle: { fontSize: 18, fontWeight: "bold", color: "#333" },
@@ -327,6 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 15,
+    paddingHorizontal: 15, // Added padding
   },
   searchInputWrapper: {
     flex: 1,
