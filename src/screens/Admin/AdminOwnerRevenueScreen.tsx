@@ -29,6 +29,7 @@ const AdminOwnerRevenueScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [stats, setStats] = useState<RevenueStats | null>(null);
     const [locationStats, setLocationStats] = useState<LocationRevenueStats[]>([]);
+    const [bookings, setBookings] = useState<any[]>([]);
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -45,7 +46,8 @@ const AdminOwnerRevenueScreen = () => {
 
             const [res, locRes] = await Promise.all([
                 adminService.getOwnerRevenue(ownerId, month, year),
-                adminService.getOwnerLocationRevenue(ownerId, month, year)
+                adminService.getOwnerLocationRevenue(ownerId, month, year),
+                // adminService.getOwnerBookings(ownerId, month, year) // Endpoint not available in backend
             ]);
 
             if (res && res.result) {
@@ -54,6 +56,8 @@ const AdminOwnerRevenueScreen = () => {
             if (locRes && locRes.result) {
                 setLocationStats(locRes.result);
             }
+            // setBookings([]); // Default to empty as backend doesn't support fetching bookings for admin yet
+
         } catch (error) {
             console.log('Error fetching stats:', error);
             Alert.alert('Lỗi', 'Không thể tải thống kê');
@@ -164,6 +168,62 @@ const AdminOwnerRevenueScreen = () => {
                                 <Text style={styles.courtRevenue}>{item.totalRevenue.toLocaleString('vi-VN')} đ</Text>
                             </View>
                         ))
+                    )}
+
+                    <Text style={styles.sectionTitle}>Danh sách hóa đơn</Text>
+                    {bookings.length === 0 ? (
+                        <Text style={styles.emptyText}>Chi tiết danh sách hóa đơn không khả dụng.</Text>
+                    ) : (
+                        bookings.map((item: any, index: number) => {
+                            let statusText = item.status;
+                            let statusColor = '#999';
+
+                            switch (item.status) {
+                                case "PENDING":
+                                    statusText = "Chờ xác nhận";
+                                    statusColor = "#f39c12";
+                                    break;
+                                case "COMPLETED":
+                                    statusText = "Hoàn thành";
+                                    statusColor = "#27ae60";
+                                    break;
+                                case "CANCELED":
+                                case "CANCELLED":
+                                    statusText = "Đã hủy";
+                                    statusColor = "#e74c3c";
+                                    break;
+                                case "EXPIRED":
+                                    statusText = "Hết hạn";
+                                    statusColor = "#95a5a6";
+                                    break;
+                                case "CONFIRMED":
+                                    if (item.paymentMethod === 'VNPAY' || item.paymentMethod === 'PAY_OS') {
+                                        statusText = "Đã thanh toán";
+                                        statusColor = "#2ecc71";
+                                    } else {
+                                        statusText = "Chờ thanh toán";
+                                        statusColor = "#f1c40f";
+                                    }
+                                    break;
+                            }
+
+                            return (
+                                <View key={index} style={styles.bookingItem}>
+                                    <View style={styles.bookingRow}>
+                                        <Text style={styles.bookingId}>#{item.id}</Text>
+                                        <Text style={[styles.bookingStatus, { color: statusColor }]}>
+                                            {statusText}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.bookingText}>{item.courtName} - {item.locationName}</Text>
+                                    <Text style={styles.bookingText}>{item.bookingDate} | {item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</Text>
+                                    <View style={styles.bookingRow}>
+                                        <Text style={styles.bookingMethod}>{item.paymentMethod || 'CASH'}</Text>
+                                        <Text style={styles.bookingPrice}>{item.totalPrice?.toLocaleString('vi-VN')} đ</Text>
+                                    </View>
+                                </View>
+                            );
+                        })
                     )}
                 </ScrollView>
             )}
@@ -294,7 +354,6 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
     },
-    // New Styles
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
@@ -336,6 +395,45 @@ const styles = StyleSheet.create({
         color: '#999',
         marginTop: 10,
         fontStyle: 'italic',
+    },
+    bookingItem: {
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#eee'
+    },
+    bookingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4
+    },
+    bookingId: {
+        fontWeight: 'bold',
+        color: '#333'
+    },
+    bookingStatus: {
+        fontWeight: 'bold',
+        fontSize: 12
+    },
+    bookingText: {
+        color: '#666',
+        fontSize: 13,
+        marginBottom: 2
+    },
+    bookingMethod: {
+        fontSize: 12,
+        color: '#3B9AFF',
+        fontWeight: '600',
+        marginTop: 4
+    },
+    bookingPrice: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#333',
+        marginTop: 4
     }
 });
 

@@ -20,12 +20,12 @@ interface BookingItem {
     endTimeSlot: number;
     startHours?: number[];
     totalPrice: number;
-    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REJECTED';
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED' | 'REJECTED';
     paymentMethod: string;
 }
 
 const ManagerBookingScreen = () => {
-    const [bookings, setBookings] = useState<BookingItem[]>([]);
+    // const [bookings, setBookings] = useState<BookingItem[]>([]); // Removed, using displayedBookings
     const [isLoading, setIsLoading] = useState(false);
     const { user } = useAuthStore();
 
@@ -35,7 +35,13 @@ const ManagerBookingScreen = () => {
 
     const showNotification = useNotificationStore(state => state.showNotification);
 
-    const fetchBookings = async () => {
+    const [allBookings, setAllBookings] = useState<BookingItem[]>([]);
+    const [displayedBookings, setDisplayedBookings] = useState<BookingItem[]>([]);
+    const [page, setPage] = useState(1);
+    const LIMIT = 10;
+
+    const fetchBookings = async (isRefresh = false) => {
+        if (isLoading) return;
         setIsLoading(true);
         try {
             const params: any = {};
@@ -46,13 +52,16 @@ const ManagerBookingScreen = () => {
 
             const data = await bookingService.getOwnerBookings(params);
 
-            // Sort: Pending first, then date descending
-            const sorted = data.sort((a: BookingItem, b: BookingItem) => {
-                if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
-                if (a.status !== 'PENDING' && b.status === 'PENDING') return 1;
-                return new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime();
-            });
-            setBookings(sorted);
+            // Backend returns array of all bookings
+            const newBookings: BookingItem[] = data || [];
+
+            // Store ALL
+            setAllBookings(newBookings);
+
+            // Initial Display
+            setDisplayedBookings(newBookings.slice(0, LIMIT));
+            setPage(1);
+
         } catch (error) {
             console.error("Error fetching bookings:", error);
             showNotification("Không thể tải danh sách đặt sân", "error");
@@ -62,8 +71,16 @@ const ManagerBookingScreen = () => {
     };
 
     useEffect(() => {
-        fetchBookings();
-    }, [selectedDate]); // Refetch when date changes
+        fetchBookings(true);
+    }, [selectedDate]);
+
+    const handleLoadMore = () => {
+        const nextCount = (page + 1) * LIMIT;
+        if (displayedBookings.length < allBookings.length) {
+            setDisplayedBookings(allBookings.slice(0, nextCount));
+            setPage(prev => prev + 1);
+        }
+    };
 
     const onDateChange = (event: any, date?: Date) => {
         if (Platform.OS === 'android') {
@@ -71,14 +88,20 @@ const ManagerBookingScreen = () => {
         }
         if (date) {
             setSelectedDate(date);
+            // fetchBookings will be triggered by useEffect
         }
     };
 
-    const handleUpdateStatus = async (id: number, status: 'CONFIRMED' | 'REJECTED') => {
+    const handleUpdateStatus = async (id: number, status: 'CONFIRMED' | 'CANCELED') => {
         try {
             await bookingService.updateBookingStatus(id, status);
             showNotification(`Đã ${status === 'CONFIRMED' ? 'duyệt' : 'từ chối'} lịch đặt.`, "success");
-            fetchBookings();
+            // Refresh purely to update status - or just update local state
+            // Updating local state is better UX
+            const updateStatus = (list: BookingItem[]) => list.map(b => b.id === id ? { ...b, status: status } : b);
+
+            setAllBookings(prev => updateStatus(prev));
+            setDisplayedBookings(prev => updateStatus(prev));
         } catch (error: any) {
             console.error("Error updating booking:", error);
             showNotification(error.response?.data?.message || "Không thể cập nhật trạng thái", "error");
@@ -99,25 +122,37 @@ const ManagerBookingScreen = () => {
             return `${formatTime(item.startTimeSlot)} - ${formatTime(item.endTimeSlot)}`;
         };
 
-        const getStatusColor = (status: string) => {
+        const getStatusText = (status: string, paymentMethod: string) => {
             switch (status) {
-                case 'PENDING': return '#F59E0B'; // Orange
-                case 'CONFIRMED': return '#10B981'; // Green
-                case 'COMPLETED': return '#3B82F6'; // Blue
-                case 'CANCELLED': return '#EF4444'; // Red
-                case 'REJECTED': return '#6B7280'; // Gray
-                default: return '#6B7280';
+                case 'PENDING': return 'Chờ duyệt';
+                case 'CONFIRMED':
+                    if (paymentMethod === 'VNPAY' || paymentMethod === 'PAY_OS') {
+                        return 'Đã thanh toán'; // Paid
+                    }
+                    return 'Chờ thanh toán'; // Pending Payment
+                case 'COMPLETED': return 'Hoàn thành';
+                case 'CANCELED':
+                case 'CANCELLED':
+                case 'REJECTED': return 'Đã hủy';
+                case 'EXPIRED': return 'Hết hạn';
+                default: return status;
             }
         };
 
-        const getStatusText = (status: string) => {
+        const getStatusColor = (status: string, paymentMethod: string) => {
             switch (status) {
-                case 'PENDING': return 'Chờ duyệt';
-                case 'CONFIRMED': return 'Đã duyệt';
-                case 'COMPLETED': return 'Hoàn thành';
-                case 'CANCELLED': return 'Đã hủy';
-                case 'REJECTED': return 'Từ chối';
-                default: return status;
+                case 'PENDING': return '#F59E0B'; // Orange
+                case 'CONFIRMED':
+                    if (paymentMethod === 'VNPAY' || paymentMethod === 'PAY_OS') {
+                        return '#10B981'; // Green
+                    }
+                    return '#F59E0B'; // Yellow/Orange for Pending Payment
+                case 'COMPLETED': return '#3B82F6'; // Blue
+                case 'CANCELED':
+                case 'CANCELLED':
+                case 'REJECTED': return '#EF4444'; // Red
+                case 'EXPIRED': return '#6B7280'; // Gray
+                default: return '#6B7280';
             }
         };
 
@@ -128,8 +163,8 @@ const ManagerBookingScreen = () => {
                         <Text style={styles.courtName}>{item.courtName}</Text>
                         <Text style={styles.locationName}>{item.locationName}</Text>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-                        <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status, item.paymentMethod) }]}>
+                        <Text style={styles.statusText}>{getStatusText(item.status, item.paymentMethod)}</Text>
                     </View>
                 </View>
 
@@ -161,7 +196,7 @@ const ManagerBookingScreen = () => {
                     <View style={styles.actionFooter}>
                         <TouchableOpacity
                             style={[styles.btn, styles.btnReject]}
-                            onPress={() => handleUpdateStatus(item.id, 'REJECTED')}
+                            onPress={() => handleUpdateStatus(item.id, 'CANCELED')}
                         >
                             <Text style={[styles.btnText, { color: '#EF4444' }]}>Từ chối</Text>
                         </TouchableOpacity>
@@ -208,7 +243,9 @@ const ManagerBookingScreen = () => {
                 {selectedDate && (
                     <TouchableOpacity
                         style={styles.filterButton}
-                        onPress={() => setSelectedDate(null)}
+                        onPress={() => {
+                            setSelectedDate(null);
+                        }}
                     >
                         <Ionicons name="close-circle" size={20} color="#666" />
                         <Text style={[styles.filterText, { color: '#666', marginLeft: 4 }]}>Xóa lọc</Text>
@@ -227,12 +264,19 @@ const ManagerBookingScreen = () => {
             )}
 
             <FlatList
-                data={bookings}
+                data={displayedBookings}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : index.toString()}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={fetchBookings} colors={[COLORS.primary]} />
+                    <RefreshControl refreshing={isLoading} onRefresh={() => fetchBookings(true)} colors={[COLORS.primary]} />
+                }
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={
+                    displayedBookings.length < allBookings.length ? (
+                        <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 20 }} />
+                    ) : null
                 }
                 ListEmptyComponent={
                     !isLoading ? (

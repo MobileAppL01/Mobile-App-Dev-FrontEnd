@@ -51,11 +51,18 @@ export const useAuthStore = create<AuthState>()(
           // We need to map it to `UserData`.
 
           const currentUser = get().user;
+          let role = data.roles && data.roles.length > 0 ? data.roles[0] : (data.role || currentUser?.role || "CLIENT");
+
+          // Normalize role to match RootNavigator expectations
+          if (role === 'OWNER') role = 'ROLE_OWNER';
+          if (role === 'ADMIN') role = 'ROLE_ADMIN';
+          if (role === 'PLAYER') role = 'ROLE_PLAYER';
+
           const fullUserData: UserData = {
             id: data.id?.toString() || currentUser?.id || "",
             fullName: data.fullName || data.email,
             email: data.email,
-            role: data.role || currentUser?.role || "CLIENT",
+            role: role,
             phone: data.phone || "",
             avatar: data.avatar || currentUser?.avatar || "https://i.pravatar.cc/300",
           };
@@ -79,7 +86,10 @@ export const useAuthStore = create<AuthState>()(
             email: response.email,
             role: userRole,
             phone: response.phone || "",
-            avatar: "https://i.pravatar.cc/300",
+
+            // Check if backend response actually includes avatar (even if type doesn't say so)
+            // Otherwise it will be updated by fetchProfile below
+            avatar: (response as any).avatar || "https://i.pravatar.cc/300",
           };
 
 
@@ -91,8 +101,12 @@ export const useAuthStore = create<AuthState>()(
             hasSeenOnboarding: true,
             user: userData,
             token: response.token,
+
             isLoading: false,
           });
+
+          // Fetch full profile to ensure avatar and other details are up to date
+          await get().fetchProfile();
         } catch (error: any) {
           console.log("Login failed:", error.message);
           set({

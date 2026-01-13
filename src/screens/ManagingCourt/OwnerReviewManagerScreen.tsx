@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { reviewService, UIReview, ReviewStats, UIReply } from '../../services/reviewService';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getAvatarSource } from '../../utils/imageHelper';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -318,7 +319,7 @@ export default function OwnerReviewManagerScreen() {
             <Swipeable renderRightActions={renderRightActions} key={reply.id}>
                 <View style={[styles.replyContainer, (isMyReply || reply.user.isOwner) && styles.replyContainerOwner]}>
                     <View style={styles.reviewHeader}>
-                        <Image source={{ uri: reply.user.avatar }} style={styles.avatarSmall} />
+                        <Image source={getAvatarSource(reply.user.avatar)} style={styles.avatarSmall} />
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Text style={styles.userName}>{reply.user.name}</Text>
@@ -340,7 +341,7 @@ export default function OwnerReviewManagerScreen() {
         <View style={styles.reviewItem}>
             {/* Header: User Info */}
             <View style={styles.reviewHeader}>
-                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+                <Image source={getAvatarSource(item.user.avatar)} style={styles.avatar} />
                 <View style={styles.userInfo}>
                     <Text style={styles.userName}>{item.user.name}</Text>
                     <View style={styles.ratingRow}>
@@ -598,7 +599,8 @@ const styles = StyleSheet.create({
     dateText: { fontSize: 12, color: '#999', marginLeft: 8 },
     commentContent: { fontSize: 14, color: '#333', lineHeight: 20, marginBottom: 8 },
     reviewImages: { flexDirection: 'row', marginBottom: 10 },
-    reviewImage: { width: 100, height: 80, borderRadius: 4, marginRight: 8 },
+    reviewImage: { width: 100, height: 80, borderRadius: 4, marginRight: 8, resizeMode: 'cover' },
+
 
     // Actions
     actionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },

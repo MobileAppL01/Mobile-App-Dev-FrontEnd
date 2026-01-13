@@ -186,7 +186,7 @@ export default function HomeScreen() {
         pricePerHour: loc.pricePerHour,
         openTime: "06:00", // Default
         closeTime: "22:00", // Default
-        image: { uri: null }, // Initialize with null to trigger default/random logic
+        image: (loc as any).image ? { uri: (loc as any).image } : { uri: null },
         phone: "0123456789",
         description: "Sân cầu lông chất lượng cao, thảm đạt chuẩn thi đấu, hệ thống ánh sáng hiện đại, không gian thoáng mát sạch sẽ.",
         status: loc.status

@@ -25,8 +25,17 @@ export default function BookingHistoryScreen() {
   const [loading, setLoading] = useState(false);
 
   // State lưu dữ liệu đã phân loại
-  const [upcomingBookings, setUpcomingBookings] = useState([]);
-  const [historyBookings, setHistoryBookings] = useState([]);
+  // State lưu dữ liệu (Client-side Pagination)
+  const [allUpcoming, setAllUpcoming] = useState([]);
+  const [allHistory, setAllHistory] = useState([]);
+
+  const [displayedUpcoming, setDisplayedUpcoming] = useState([]);
+  const [displayedHistory, setDisplayedHistory] = useState([]);
+
+  const [upcomingPage, setUpcomingPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+
+  const ITEMS_PER_PAGE = 10;
 
   // --- HELPER FUNCTIONS (Xử lý dữ liệu) ---
 
@@ -80,18 +89,19 @@ export default function BookingHistoryScreen() {
       case "COMPLETED":
         return "Hoàn thành";
       case "CANCELLED":
-        return "Đã hủy";
+      case "CANCELED":
       case "REJECTED":
-        return "Bị từ chối";
+        return "Đã hủy";
       default:
         return status;
     }
   };
 
   // --- API CALL ---
+  // --- API CALL ---
   const fetchBookingHistory = async () => {
     try {
-      const data = await bookingService.getAllPlayerHistory();
+      const data = await bookingService.getAllPlayerHistory(); // Fetch ALL data
 
       if (data && Array.isArray(data)) {
         const upcoming = [];
@@ -111,44 +121,43 @@ export default function BookingHistoryScreen() {
           };
 
           // 2. Parse ngày đặt sân (bookingDate string "YYYY-MM-DD" -> Date Object)
-          // Lưu ý: Dùng split để tạo Date theo giờ địa phương, tránh lỗi lệch múi giờ UTC
           const [year, month, day] = item.bookingDate.split("-").map(Number);
-          const bookingDate = new Date(year, month - 1, day); // tháng bắt đầu từ 0
+          const bookingDate = new Date(year, month - 1, day);
 
-          // --- LOGIC PHÂN LOẠI MỚI ---
-
-          // Điều kiện 1: Đã quá khứ (Ngày đặt < Hôm nay)
+          // --- LOGIC PHÂN LOẠI ---
           const isPastDate = bookingDate < today;
-
-          // Điều kiện 2: Trạng thái đã kết thúc (Hủy, Từ chối, hoặc Đã xong)
           const isCompletedStatus = [
             "COMPLETED",
             "CANCELLED",
             "REJECTED",
           ].includes(item.status);
 
-          // QUYẾT ĐỊNH:
-          // Nếu là ngày quá khứ HOẶC trạng thái đã kết thúc -> Cho vào Lịch sử
           if (isPastDate || isCompletedStatus) {
             history.push(formattedItem);
           } else {
-            // Ngược lại: Ngày tương lai/hôm nay VÀ trạng thái còn hoạt động (Pending/Confirmed) -> Lịch hẹn
             upcoming.push(formattedItem);
           }
         });
 
-        // Sắp xếp Lịch hẹn: Ngày gần nhất lên đầu (Tăng dần)
+        // Sắp xếp
         upcoming.sort(
           (a, b) => new Date(a.bookingDate) - new Date(b.bookingDate)
         );
-
-        // Sắp xếp Lịch sử: Ngày mới nhất lên đầu (Giảm dần)
         history.sort(
           (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)
         );
 
-        setUpcomingBookings(upcoming);
-        setHistoryBookings(history);
+        // Store ALL data
+        setAllUpcoming(upcoming);
+        setAllHistory(history);
+
+        // Initial Display (Page 1)
+        setDisplayedUpcoming(upcoming.slice(0, ITEMS_PER_PAGE));
+        setDisplayedHistory(history.slice(0, ITEMS_PER_PAGE));
+
+        setUpcomingPage(1);
+        setHistoryPage(1);
+
       } else {
         console.log("Không lấy được dữ liệu hoặc dữ liệu rỗng");
       }
@@ -159,10 +168,27 @@ export default function BookingHistoryScreen() {
       setRefreshing(false);
     }
   };
+
   useEffect(() => {
     setLoading(true);
     fetchBookingHistory();
   }, []);
+
+  const loadMoreUpcoming = () => {
+    const nextCount = (upcomingPage + 1) * ITEMS_PER_PAGE;
+    if (displayedUpcoming.length < allUpcoming.length) {
+      setDisplayedUpcoming(allUpcoming.slice(0, nextCount));
+      setUpcomingPage(prev => prev + 1);
+    }
+  };
+
+  const loadMoreHistory = () => {
+    const nextCount = (historyPage + 1) * ITEMS_PER_PAGE;
+    if (displayedHistory.length < allHistory.length) {
+      setDisplayedHistory(allHistory.slice(0, nextCount));
+      setHistoryPage(prev => prev + 1);
+    }
+  };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -171,7 +197,7 @@ export default function BookingHistoryScreen() {
 
   // Xác định dữ liệu cần render
   const displayData =
-    activeTab === "upcoming" ? upcomingBookings : historyBookings;
+    activeTab === "upcoming" ? displayedUpcoming : displayedHistory;
 
   const renderBookingItem = ({ item }) => (
     <View style={styles.card}>
@@ -184,7 +210,7 @@ export default function BookingHistoryScreen() {
         <View style={styles.headerTextContainer}>
           {/* courtName làm tiêu đề chính, locationName làm phụ */}
           <Text style={styles.placeName} numberOfLines={1}>
-            {item.locationName} ({item.courtName})
+            {item.courtName} - {item.locationName}
           </Text>
           <Text style={styles.addressName} numberOfLines={1}>
             {item.locationAddress}
@@ -261,7 +287,7 @@ export default function BookingHistoryScreen() {
                 activeTab === "upcoming" && styles.activeTabText,
               ]}
             >
-              Lịch hẹn ({upcomingBookings.length})
+              Lịch hẹn ({allUpcoming.length})
             </Text>
           </TouchableOpacity>
 
@@ -279,7 +305,7 @@ export default function BookingHistoryScreen() {
                 activeTab === "history" && styles.activeTabText,
               ]}
             >
-              Lịch sử ({historyBookings.length})
+              Lịch sử ({allHistory.length})
             </Text>
           </TouchableOpacity>
         </View>
@@ -296,12 +322,22 @@ export default function BookingHistoryScreen() {
         <FlatList
           data={displayData}
           renderItem={renderBookingItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : index.toString()}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          onEndReached={activeTab === "upcoming" ? loadMoreUpcoming : loadMoreHistory}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() => {
+            const currentList = activeTab === "upcoming" ? displayedUpcoming : displayedHistory;
+            const totalList = activeTab === "upcoming" ? allUpcoming : allHistory;
+            if (currentList.length < totalList.length) {
+              return <ActivityIndicator size="small" color="#42A5F5" style={{ margin: 10 }} />;
+            }
+            return null;
+          }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Chưa có dữ liệu</Text>

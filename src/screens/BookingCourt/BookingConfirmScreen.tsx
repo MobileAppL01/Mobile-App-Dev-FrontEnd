@@ -163,13 +163,18 @@ export default function BookingConfirmScreen() {
                         }
                     });
                 } else {
-                    // Method: VNPAY (Active / Full Payment)
-                    const fakeUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?amount=${finalTotal}&orderInfo=Booking_${bookingResult.id}`;
+                    // Method: VNPAY (Also use QR for manual transfer)
+                    const fullAmount = finalTotal;
 
-                    navigation.replace("PaymentWebView", {
-                        paymentUrl: "",
+                    navigation.replace("PaymentQR", {
                         booking: bookingResult,
-                        totalPrice: finalTotal
+                        totalPrice: fullAmount,
+                        bankInfo: {
+                            bankId: "MB",
+                            accountNo: "0376929681",
+                            accountName: "PHAM THANH PHONG",
+                            content: `THANH TOAN DON ${bookingResult.id}`
+                        }
                     });
                 }
             } else {

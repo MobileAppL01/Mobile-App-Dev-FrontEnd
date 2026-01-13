@@ -33,6 +33,13 @@ export const adminService = {
             params: { month, year }
         });
         return response.data;
+    },
+
+    getOwnerBookings: async (ownerId: number, month: number, year: number) => {
+        const response = await axiosInstance.get(`/admin/owners/${ownerId}/bookings/history`, {
+            params: { month, year } // Assuming backend supports this
+        });
+        return response.data;
     }
 };
 

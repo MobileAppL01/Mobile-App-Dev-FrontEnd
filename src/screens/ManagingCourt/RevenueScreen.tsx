@@ -60,66 +60,81 @@ const RevenueScreen = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusConfig = (status: string, paymentMethod: string) => {
     switch (status) {
       case "PENDING":
-        return "Chờ xác nhận";
-      case "CONFIRMED":
-        return "Đã thanh toán"; // Changed to Đã thanh toán as per context of Revenue
+        return { text: "Chờ xác nhận", color: "#f39c12" }; // Orange
       case "COMPLETED":
-        return "Hoàn thành";
+        return { text: "Hoàn thành", color: "#27ae60" }; // Green
+      case "CANCELED":
       case "CANCELLED":
-        return "Đã hủy";
       case "REJECTED":
-        return "Bị từ chối";
+        return { text: "Đã hủy", color: "#e74c3c" }; // Red
+      case "EXPIRED":
+        return { text: "Hết hạn", color: "#95a5a6" }; // Gray
+      case "CONFIRMED":
+        if (paymentMethod === 'VNPAY' || paymentMethod === 'PAY_OS') {
+          return { text: "Đã thanh toán", color: "#2ecc71" }; // Light Green for Paid
+        } else {
+          return { text: "Chờ thanh toán", color: "#f1c40f" }; // Yellow for Pending Payment
+        }
       default:
-        return status;
+        return { text: status, color: "#95a5a6" }; // Grey
     }
   };
 
-  const renderBookingItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      {/* Thông tin người đặt */}
-      <View style={styles.row}>
-        <Ionicons
-          name="person-outline"
-          size={18}
-          color="black"
-          style={styles.icon}
-        />
-        <Text style={styles.cardTextBold}>{item.courtName || "Sân cầu lông"}</Text>
-      </View>
+  const renderBookingItem = ({ item }: { item: any }) => {
+    const statusConfig = getStatusConfig(item.status, item.paymentMethod);
 
-      {/* Ngày giờ */}
-      <View style={styles.row}>
-        <Ionicons
-          name="calendar-outline"
-          size={18}
-          color="#e67e22"
-          style={styles.icon}
-        />
-        <Text style={styles.cardText}>
-          {item.bookingDate} | {item.startTime ? item.startTime.substring(0, 5) : '00:00'} - {item.endTime ? item.endTime.substring(0, 5) : '00:00'}
-        </Text>
-      </View>
+    return (
+      <View style={styles.card}>
+        {/* Thông tin người đặt */}
+        <View style={styles.row}>
+          <Ionicons
+            name="person-outline"
+            size={18}
+            color="black"
+            style={styles.icon}
+          />
+          <Text style={styles.cardTextBold}>{item.courtName || "Sân cầu lông"}</Text>
+        </View>
 
-      {/* Giá tiền */}
-      <View style={styles.row}>
-        <Ionicons
-          name="card-outline"
-          size={18}
-          color="black"
-          style={styles.icon}
-        />
-        <Text style={styles.cardText}>{formatCurrency(item.totalPrice)}</Text>
-      </View>
+        {/* Ngày giờ */}
+        <View style={styles.row}>
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color="#e67e22"
+            style={styles.icon}
+          />
+          <Text style={styles.cardText}>
+            {item.bookingDate} | {item.startTime ? item.startTime.substring(0, 5) : '00:00'} - {item.endTime ? item.endTime.substring(0, 5) : '00:00'}
+          </Text>
+        </View>
 
-      {/* Badge Thanh toán */}
-      <View style={[styles.statusBadge, item.status !== 'CONFIRMED' && { backgroundColor: '#f1c40f' }]}>
-        <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+        {/* Giá tiền */}
+        <View style={styles.row}>
+          <Ionicons
+            name="card-outline"
+            size={18}
+            color="black"
+            style={styles.icon}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.cardText}>{formatCurrency(item.totalPrice)}</Text>
+            <Text style={{ fontSize: 12, color: '#666', marginLeft: 6 }}>
+              ({item.paymentMethod || 'CASH'})
+            </Text>
+          </View>
+        </View>
+
+        {/* Badge Thanh toán */}
+        <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
+          <Text style={styles.statusText}>{statusConfig.text}</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -142,6 +157,9 @@ const RevenueScreen = () => {
         </View>
 
         {/* Danh sách Booking */}
+        <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>
+          Danh sách hóa đơn ({bookings.length})
+        </Text>
         {isLoading ? (
           <ActivityIndicator size="large" color="#3B9AFF" style={{ marginTop: 20 }} />
         ) : (
@@ -171,13 +189,7 @@ const RevenueScreen = () => {
           </Text>
         </View>
 
-        {/* Pagination (Mock) */}
-        <View style={styles.pagination}>
-          {/* Simple Pagination Mock */}
-          <View style={[styles.pageBtn, styles.activePage]}>
-            <Text style={{ fontWeight: "bold" }}>1</Text>
-          </View>
-        </View>
+
       </View>
     </SafeAreaView>
   );

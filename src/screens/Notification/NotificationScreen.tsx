@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, FlatList, TouchableOpacity, Image, RefreshContr
 import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInboxStore } from '../../store/useInboxStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { COLORS } from '../../constants/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -134,6 +135,7 @@ const NotificationItem = ({ item, onPress, onDelete }: NotificationItemProps) =>
 const NotificationScreen = () => {
     const navigation = useNavigation();
     const { notifications, unreadCount, isLoading, fetchNotifications, markRead, markAllRead, deleteNotification, deleteAllNotifications } = useInboxStore();
+    const showNotification = useNotificationStore(state => state.showNotification);
 
     useEffect(() => {
         fetchNotifications();
@@ -146,14 +148,24 @@ const NotificationScreen = () => {
     const handleDelete = (id: string) => {
         Alert.alert("Xóa thông báo", "Bạn có chắc muốn xóa thông báo này?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa", style: 'destructive', onPress: () => deleteNotification(id, false) }
+            {
+                text: "Xóa", style: 'destructive', onPress: async () => {
+                    await deleteNotification(id, false);
+                    showNotification("Xóa thông báo thành công", "success");
+                }
+            }
         ]);
     };
 
     const handleDeleteAll = () => {
         Alert.alert("Xóa tất cả", "Bạn có chắc muốn xóa tất cả thông báo?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa tất cả", style: 'destructive', onPress: () => deleteAllNotifications(false) }
+            {
+                text: "Xóa tất cả", style: 'destructive', onPress: async () => {
+                    await deleteAllNotifications(false);
+                    showNotification("Xóa tất cả thông báo thành công", "success");
+                }
+            }
         ]);
     };
 

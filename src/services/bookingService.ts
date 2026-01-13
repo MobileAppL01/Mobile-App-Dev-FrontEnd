@@ -179,6 +179,8 @@ export const bookingService = {
     locationId?: number;
     date?: string;
     status?: string;
+    page?: number;
+    limit?: number;
   }) => {
     try {
       const response = await axiosInstance.get("/owner/bookings", { params });
@@ -189,7 +191,7 @@ export const bookingService = {
     }
   },
 
-  updateBookingStatus: async (id: number, status: 'CONFIRMED' | 'REJECTED') => {
+  updateBookingStatus: async (id: number, status: 'CONFIRMED' | 'CANCELED') => {
     try {
       const response = await axiosInstance.put(`/owner/bookings/${id}/status`, { status });
       return response.data.result;

@@ -3,6 +3,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, Image, RefreshControl, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInboxStore } from '../../store/useInboxStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { COLORS } from '../../constants/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -110,6 +111,7 @@ import { Header } from '../../components/Header';
 const OwnerNotificationScreen = () => {
     const navigation = useNavigation();
     const { notifications, unreadCount, isLoading, fetchOwnerNotifications, markRead, markAllRead, deleteNotification, deleteAllNotifications } = useInboxStore();
+    const showNotification = useNotificationStore(state => state.showNotification);
 
     useEffect(() => {
         fetchOwnerNotifications();
@@ -125,14 +127,24 @@ const OwnerNotificationScreen = () => {
     const handleDelete = (id: string) => {
         Alert.alert("Xóa thông báo", "Bạn có chắc muốn xóa thông báo này?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa", style: 'destructive', onPress: () => deleteNotification(id, true) }
+            {
+                text: "Xóa", style: 'destructive', onPress: async () => {
+                    await deleteNotification(id, true);
+                    showNotification("Xóa thông báo thành công", "success");
+                }
+            }
         ]);
     };
 
     const handleDeleteAll = () => {
         Alert.alert("Xóa tất cả", "Bạn có chắc muốn xóa tất cả thông báo?", [
             { text: "Hủy", style: "cancel" },
-            { text: "Xóa tất cả", style: 'destructive', onPress: () => deleteAllNotifications(true) }
+            {
+                text: "Xóa tất cả", style: 'destructive', onPress: async () => {
+                    await deleteAllNotifications(true);
+                    showNotification("Xóa tất cả thông báo thành công", "success");
+                }
+            }
         ]);
     };
 

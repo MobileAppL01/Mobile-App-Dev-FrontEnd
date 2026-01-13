@@ -8,7 +8,7 @@ export interface RegisterRequest {
     email: string;
     password: string;
     phone: string;
-    role?: 'PLAYER' | 'OWNER';
+    role?: string;
 }
 
 export interface AuthResponse {
