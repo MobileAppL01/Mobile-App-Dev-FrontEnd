@@ -6,7 +6,7 @@ import { useInboxStore } from '../store/useInboxStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import Screens
-import HomeScreen from '../screens/BookingCourt/HomeScreen';
+import HomeScreen from '../screens/BookingCourt/HomeClient/HomeScreen';
 import UserProfileScreen from '../screens/Profile/UserProfileScreen';
 import BookingHistoryScreen from '../screens/BookingHistory/BookingHistory';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
